@@ -1,56 +1,68 @@
 {
+  "extends": ["eslint:recommended", "plugin:prettier/recommended"],
   "rules": {
     "mocha/no-exclusive-tests": "error",
     "mocha/no-skipped-tests": "warn",
 
-    "no-console": "off",
-    "no-extra-parens": "warn",
+    "jsdoc/check-param-names": "error",
+    "jsdoc/check-tag-names": "error",
+    "jsdoc/check-types": "error",
+    "jsdoc/newline-after-description": "error",
+    "jsdoc/no-undefined-types": "off",
+    "jsdoc/require-description-complete-sentence": "off",
+    "jsdoc/require-example": "off",
+    "jsdoc/require-hyphen-before-param-description": "off",
+    "jsdoc/require-param": "error",
+    "jsdoc/require-param-description": "off",
+    "jsdoc/require-param-name": "error",
+    "jsdoc/require-param-type": "error",
+    "jsdoc/require-returns-description": "off",
+    "jsdoc/require-returns-type": "error",
+    "jsdoc/valid-types": "error",
+
     "valid-jsdoc": "off",
-    "new-cap": ["warn", {"properties": false}],
-    "comma-spacing": ["error", {"before": false, "after": true}],
-    "no-extra-boolean-cast": "warn",
-    "strict": ["warn", "global"],
-    "no-var": "error",
-    "prefer-const": "error",
-    "semi": ["error", "always"],
-    "space-before-function-paren": ["warn", "never"],
-    "space-before-blocks": ["error"],
-    "keyword-spacing": ["error"],
-    "prefer-arrow-callback": "error",
-    "arrow-parens": ["error", "as-needed"],
-    "comma-style": ["warn", "last"],
-    "no-bitwise": "off",
-    "no-cond-assign": ["error", "except-parens"],
-    "curly": "off",
-    "eqeqeq": "error",
-    "no-extend-native": "error",
-    "wrap-iife": ["error", "any"],
-    "indent": ["error", 2, {"SwitchCase": 1}],
-    "no-use-before-define": "off",
-    "no-caller": "error",
-    "no-undef": "error",
-    "no-unused-vars": "error",
-    "no-irregular-whitespace": "error",
-    "max-depth": ["error", 8],
-    "quotes": ["error", "single", {"avoidEscape": true}],
-    "linebreak-style": "error",
-    "no-loop-func": "warn",
-    "object-shorthand": "error",
-    "one-var-declaration-per-line": "warn",
-    "comma-dangle": "warn",
-    "no-shadow": "warn",
-    "camelcase": "warn"
+    "no-case-declarations": "off"
+  },
+  "ignorePatterns": ["lib/**/*.js"],
+  "settings": {
+    "jsdoc": {
+      "tagNamePreference": {
+        "augments": "extends"
+      }
+    }
   },
   "parserOptions": {
-    "ecmaVersion": 6,
+    "ecmaVersion": 2020,
     "sourceType": "script"
   },
-  "plugins": [
-    "mocha"
-  ],
+  "plugins": ["mocha", "jsdoc"],
   "env": {
     "node": true,
     "mocha": true,
-    "es6": true
-  }
+    "es6": true,
+    "es2020": true
+  },
+  "overrides": [
+    {
+      "files": ["src/**/*.ts"],
+      "extends": [
+        "eslint:recommended",
+        "plugin:prettier/recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended"
+      ],
+      "globals": { "Atomics": "readonly", "SharedArrayBuffer": "readonly" },
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "ecmaVersion": 2020,
+        "sourceType": "module",
+        "project": "./tsconfig.json"
+      },
+      "plugins": ["jsdoc", "@typescript-eslint"],
+      "rules": {
+        "@typescript-eslint/ban-types": "off",
+        "@typescript-eslint/no-empty-function": "off"
+      }
+    }
+  ]
 }

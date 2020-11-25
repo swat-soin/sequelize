@@ -2,9 +2,9 @@
 
 const chai = require('chai'),
   expect = chai.expect,
-  Support = require(__dirname + '/../support'),
+  Support = require('../support'),
   current = Support.sequelize,
-  DataTypes = require(__dirname + '/../../../lib/data-types');
+  DataTypes = require('../../../lib/data-types');
 
 describe(Support.getTestDialectTeaser('Model'), () => {
   describe('indexes', () => {
@@ -18,50 +18,68 @@ describe(Support.getTestDialectTeaser('Model'), () => {
       });
 
       expect(Model.rawAttributes.eventData.index).not.to.equal(true);
-      expect(Model.options.indexes.length).to.equal(1);
-      expect(Model.options.indexes[0].fields).to.eql(['data']);
-      expect(Model.options.indexes[0].using).to.equal('gin');
+      expect(Model._indexes.length).to.equal(1);
+      expect(Model._indexes[0].fields).to.eql(['data']);
+      expect(Model._indexes[0].using).to.equal('gin');
     });
 
     it('should set the unique property when type is unique', () => {
-      const Model = current.define('m', {}, {
-        indexes: [
-          {
-            type: 'unique'
-          },
-          {
-            type: 'UNIQUE'
-          }
-        ]
-      });
+      const Model = current.define(
+        'm',
+        {},
+        {
+          indexes: [
+            {
+              type: 'unique',
+              fields: ['name']
+            },
+            {
+              type: 'UNIQUE',
+              fields: ['name']
+            }
+          ]
+        }
+      );
 
-      expect(Model.options.indexes[0].unique).to.eql(true);
-      expect(Model.options.indexes[1].unique).to.eql(true);
+      expect(Model._indexes[0].unique).to.eql(true);
+      expect(Model._indexes[1].unique).to.eql(true);
     });
 
     it('should not set rawAttributes when indexes are defined via options', () => {
-      const User = current.define('User', {
-        username: DataTypes.STRING
-      }, {
-        indexes: [{
-          unique: true,
-          fields: ['username']
-        }]
-      });
+      const User = current.define(
+        'User',
+        {
+          username: DataTypes.STRING
+        },
+        {
+          indexes: [
+            {
+              unique: true,
+              fields: ['username']
+            }
+          ]
+        }
+      );
 
       expect(User.rawAttributes.username.unique).to.be.undefined;
     });
 
     it('should not set rawAttributes when composite unique indexes are defined via options', () => {
-      const User = current.define('User', {
-        name: DataTypes.STRING,
-        address: DataTypes.STRING
-      }, {
-        indexes: [{
-          unique: 'users_name_address',
-          fields: ['name', 'address']
-        }]
-      });
+      const User = current.define(
+        'User',
+        {
+          name: DataTypes.STRING,
+          address: DataTypes.STRING
+        },
+        {
+          indexes: [
+            {
+              unique: 'users_name_address',
+              fields: ['name', 'address']
+            }
+          ]
+        }
+      );
 
       expect(User.rawAttributes.name.unique).to.be.undefined;
       expect(User.rawAttributes.address.unique).to.be.undefined;

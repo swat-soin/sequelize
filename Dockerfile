@@ -1,9 +1,8 @@
-FROM node:6.10.3
+FROM node:10
 
 RUN apt-get install libpq-dev
 
-COPY package.json /
-RUN npm install
-
 WORKDIR /sequelize
 VOLUME /sequelize
+
+COPY . /sequelize
