@@ -2,79 +2,75 @@
 
 const chai = require('chai'),
   expect = chai.expect,
-  Support = require(__dirname + '/../../support'),
-  DataTypes = require(__dirname + '/../../../../lib/data-types'),
+  Support = require('../../support'),
+  DataTypes = require('../../../../lib/data-types'),
   current = Support.sequelize;
 
 describe(Support.getTestDialectTeaser('Model'), () => {
   describe('findAll', () => {
     describe('order', () => {
       describe('Sequelize.literal()', () => {
-        beforeEach(function() {
+        beforeEach(async function () {
           this.User = this.sequelize.define('User', {
             email: DataTypes.STRING
           });
 
-          return this.User.sync({force: true}).bind(this).then(function() {
-            return this.User.create({
-              email: 'test@sequelizejs.com'
-            });
+          await this.User.sync({ force: true });
+
+          await this.User.create({
+            email: 'test@sequelizejs.com'
           });
         });
 
         if (current.dialect.name !== 'mssql' && current.dialect.name !== 'oracle') {
-          it('should work with order: literal()', function () {
-            return this.User.findAll({
-              order: this.sequelize.literal('email = ' + this.sequelize.escape('test@sequelizejs.com'))
-            }).then(users => {
-              expect(users.length).to.equal(1);
-              users.forEach(user => {
-                expect(user.get('email')).to.be.ok;
-              });
+          it('should work with order: literal()', async function () {
+            const users = await this.User.findAll({
+              order: this.sequelize.literal(`email = ${this.sequelize.escape('test@sequelizejs.com')}`)
+            });
+
+            expect(users.length).to.equal(1);
+            users.forEach(user => {
+              expect(user.get('email')).to.be.ok;
             });
           });
 
-          it('should work with order: [literal()]', function() {
-            return this.User.findAll({
-              order: [this.sequelize.literal('email = ' + this.sequelize.escape('test@sequelizejs.com'))]
-            }).then(users => {
-              expect(users.length).to.equal(1);
-              users.forEach(user => {
-                expect(user.get('email')).to.be.ok;
-              });
+          it('should work with order: [literal()]', async function () {
+            const users = await this.User.findAll({
+              order: [this.sequelize.literal(`email = ${this.sequelize.escape('test@sequelizejs.com')}`)]
+            });
+
+            expect(users.length).to.equal(1);
+            users.forEach(user => {
+              expect(user.get('email')).to.be.ok;
             });
           });
 
-          it('should work with order: [[literal()]]', function() {
-            return this.User.findAll({
-              order: [
-                [this.sequelize.literal('email = ' + this.sequelize.escape('test@sequelizejs.com'))]
-              ]
-            }).then(users => {
-              expect(users.length).to.equal(1);
-              users.forEach(user => {
-                expect(user.get('email')).to.be.ok;
-              });
+          it('should work with order: [[literal()]]', async function () {
+            const users = await this.User.findAll({
+              order: [[this.sequelize.literal(`email = ${this.sequelize.escape('test@sequelizejs.com')}`)]]
+            });
+
+            expect(users.length).to.equal(1);
+            users.forEach(user => {
+              expect(user.get('email')).to.be.ok;
             });
           });
         }
       });
 
       describe('injections', () => {
-        beforeEach(function() {
+        beforeEach(async function () {
           this.User = this.sequelize.define('user', {
             name: DataTypes.STRING
           });
-          this.Group = this.sequelize.define('group', {
-
-          });
+          this.Group = this.sequelize.define('group', {});
           this.User.belongsTo(this.Group);
-          return this.sequelize.sync({force: true});
+          await this.sequelize.sync({ force: true });
         });
 
         if (current.dialect.supports['ORDER NULLS']) {
-          it('should not throw with on NULLS LAST/NULLS FIRST', function() {
-            return this.User.findAll({
+          it('should not throw with on NULLS LAST/NULLS FIRST', async function () {
+            await this.User.findAll({
               include: [this.Group],
               order: [
                 ['id', 'ASC NULLS LAST'],
@@ -86,23 +82,19 @@ describe(Support.getTestDialectTeaser('Model'), () => {
 
         //Oracle doesn't suport if ASC is stuck to the identifier
         if (current.dialect.name !== 'oracle') {
-          it('should not throw on a literal', function () {
-            return this.User.findAll({
-              order: [
-                ['id', this.sequelize.literal('ASC, name DESC')]
-              ]
+          it('should not throw on a literal', async function () {
+            await this.User.findAll({
+              order: [['id', this.sequelize.literal('ASC, name DESC')]]
+            });
+          });
+
+          it('should not throw with include when last order argument is a field', async function () {
+            await this.User.findAll({
+              include: [this.Group],
+              order: [[this.Group, 'id']]
             });
           });
         }
-
-        it('should not throw with include when last order argument is a field', function() {
-          return this.User.findAll({
-            include: [this.Group],
-            order: [
-              [this.Group, 'id']
-            ]
-          });
-        });
       });
     });
   });

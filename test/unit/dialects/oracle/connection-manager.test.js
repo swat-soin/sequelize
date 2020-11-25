@@ -7,7 +7,6 @@ const Support = require(__dirname + '/../../support');
 const dialect = Support.getTestDialect();
 
 describe('[ORACLE] Connection Manager', () => {
-
   let instance, config;
 
   if (dialect === 'oracle') {
@@ -15,20 +14,20 @@ describe('[ORACLE] Connection Manager', () => {
       //  expect(config.dialectOptions.domain).to.equal('TEST.COM');
       config = {
         dialect: 'oracle',
-        host : 'localhost',
+        host: 'localhost',
         database: 'localhost:1521/xe.oracle.docker',
         username: 'sequelize',
         password: 'sequelize'
       };
       instance = new Sequelize(config.database, config.username, config.password, config);
 
-      instance.dialect.connectionManager.connect(config)
+      instance.dialect.connectionManager
+        .connect(config)
         .then(result => {
           expect(instance.getDialect()).to.equal('oracle');
-          instance.dialect.connectionManager.disconnect(result)
-            .then(() => {
-              done();
-            });
+          instance.dialect.connectionManager.disconnect(result).then(() => {
+            done();
+          });
         })
         .catch(error => {
           done(error);
@@ -46,13 +45,13 @@ describe('[ORACLE] Connection Manager', () => {
       };
       instance = new Sequelize(config.database, config.username, config.password, config);
 
-      instance.dialect.connectionManager.connect(config)
+      instance.dialect.connectionManager
+        .connect(config)
         .then(result => {
           expect(instance.getDialect()).to.equal('oracle');
-          instance.dialect.connectionManager.disconnect(result)
-            .then(() => {
-              done();
-            });
+          instance.dialect.connectionManager.disconnect(result).then(() => {
+            done();
+          });
         })
         .catch(error => {
           done(error);
@@ -70,14 +69,14 @@ describe('[ORACLE] Connection Manager', () => {
       };
       instance = new Sequelize(config.database, config.username, config.password, config);
 
-      instance.dialect.connectionManager.connect(config)
+      instance.dialect.connectionManager
+        .connect(config)
         .then(result => {
           done('You shall not pass');
           expect(instance.getDialect()).to.equal('oracle');
-          instance.dialect.connectionManager.disconnect(result)
-            .then(() => {
-              done('You shall not pass');
-            });
+          instance.dialect.connectionManager.disconnect(result).then(() => {
+            done('You shall not pass');
+          });
         })
         .catch(err => {
           expect(err.message).to.equal('You have to specify the host');
@@ -95,7 +94,8 @@ describe('[ORACLE] Connection Manager', () => {
         database: ''
       };
       instance = new Sequelize(config.database, config.username, config.password, config);
-      instance.dialect.connectionManager.connect(config)
+      instance.dialect.connectionManager
+        .connect(config)
         .then(() => {
           done('You shall not pass');
           expect(instance.getDialect()).to.equal('oracle');

@@ -1,4 +1,4 @@
-sudo: false
+sudo: true
 dist: trusty
 
 language: node_js
@@ -6,30 +6,23 @@ language: node_js
 branches:
   only:
     - master
-    - v3
-    - /^greenkeeper/.*$/
   except:
     - /^v\d+\.\d+\.\d+$/
 
-cache:
-  directories:
-    - node_modules
+cache: npm
+
+install:
+  - npm ci
+  - |-
+    if [ "$DIALECT" = "postgres-native" ]; then npm install pg-native; fi
 
 env:
   global:
-    # mysql info
-    - SEQ_MYSQL_DB=sequelize_test
-    - SEQ_MYSQL_USER=sequelize_test
-    - SEQ_MYSQL_PW=sequelize_test
-    - SEQ_MYSQL_HOST=127.0.0.1
-    - SEQ_MYSQL_PORT=8999
-    # postgres info
-    - SEQ_PG_DB=sequelize_test
-    - SEQ_PG_USER=sequelize_test
-    - SEQ_PG_PW=sequelize_test
-    - SEQ_PG_HOST=127.0.0.1
-    - SEQ_PG_PORT=8998
-    # oracle info
+    - SEQ_DB=sequelize_test
+    - SEQ_USER=sequelize_test
+    - SEQ_PW=sequelize_test
+    - SEQ_HOST=127.0.0.1
+    - COVERAGE=true
     - NODE_ORACLEDB_HOST: localhost
 
 before_install:
@@ -48,14 +41,16 @@ before_install:
       cd $TRAVIS_BUILD_DIR;
     fi
 
+
 before_script:
-  # mount ramdisk
-  - "if [ $POSTGRES_VER ] || [ $MYSQL_VER ]; then sudo mkdir /mnt/sequelize-ramdisk; fi"
-  - "if [ $POSTGRES_VER ] || [ $MYSQL_VER ]; then sudo mount -t ramfs tmpfs /mnt/sequelize-ramdisk; fi"
-  # setup docker
-  - "if [ $POSTGRES_VER ] || [ $MYSQL_VER ] || [ $ORACLE_VER ]; then docker-compose up -d ${POSTGRES_VER} ${MYSQL_VER} ${ORACLE_VER}; fi"
-  - "if [ $MYSQL_VER ]; then docker run --link ${MYSQL_VER}:db -e CHECK_PORT=3306 -e CHECK_HOST=db --net sequelize_default giorgos/takis; fi"
-  - "if [ $POSTGRES_VER ]; then docker run --link ${POSTGRES_VER}:db -e CHECK_PORT=5432 -e CHECK_HOST=db --net sequelize_default giorgos/takis; fi"
+  # setup docker  
+  - if [ $MARIADB_VER ]; then export MARIADB_ENTRYPOINT=$TRAVIS_BUILD_DIR/test/config/mariadb; fi
+  - if [ $MYSQL_VER ]; then export MYSQLDB_ENTRYPOINT=$TRAVIS_BUILD_DIR/test/config/mysql; fi
+  - if [ $POSTGRES_VER ] || [ $MARIADB_VER ] || [ $MYSQL_VER ] || [ $ORACLE_VER ]; then docker-compose up -d ${POSTGRES_VER} ${MARIADB_VER} ${MYSQL_VER} ${$ORACLE_VER}; fi
+  - wait_for() { docker run --net sequelize_default jwilder/dockerize -timeout 2m -wait "$1"; }
+  - if [ $POSTGRES_VER ]; then wait_for tcp://${POSTGRES_VER}:5432; fi
+  - if [ $MARIADB_VER ]; then wait_for tcp://${MARIADB_VER}:3306; fi
+  - if [ $MYSQL_VER ]; then wait_for tcp://${MYSQL_VER}:3306; fi
   - |
     if [ $ORACLE_VER ]; then 
       docker run --link ${ORACLE_VER}:db -e CHECK_PORT=1521 -e CHECK_HOST=db --net sequelize_default giorgos/takis
@@ -63,54 +58,57 @@ before_script:
     fi
 
 script:
-  - npm run lint
-  - "if [ $COVERAGE ]; then npm run cover && bash <(curl -s https://codecov.io/bash) -f coverage/lcov.info; else npm run test; fi"
+  - npm run tsc
+  - npm run cover && bash <(curl -s https://codecov.io/bash) -f coverage/lcov.info
 
 jobs:
   include:
-    - stage: tests
-      node_js: 4
-      env: ORACLE_VER=oracle-12c DIALECT=oracle
-    - stage: tests
-      node_js: 6
-      env: ORACLE_VER=oracle-12c DIALECT=oracle COVERAGE=true
-    - stage: tests
-      node_js: 4
-      env: DIALECT=sqlite COVERAGE=true
-    - stage: tests
-      node_js: 4
-      sudo: required
-      env: MYSQL_VER=mysql-57 DIALECT=mysql COVERAGE=true
-    - stage: tests
-      node_js: 4
-      sudo: required
-      env: POSTGRES_VER=postgres-95 DIALECT=postgres COVERAGE=true
-    - stage: tests
-      node_js: 4
-      sudo: required
-      env: POSTGRES_VER=postgres-95 DIALECT=postgres-native COVERAGE=true
-    - stage: tests
-      node_js: 8
-      env: DIALECT=sqlite
-    - stage: tests
-      node_js: 6
-      env: DIALECT=sqlite
-    - stage: docs
-      node_js: 6
+    - stage: lint
+      node_js: '12'
       script:
-        - 'if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ "${TRAVIS_BRANCH}" = "master" ]; then npm run docs; fi'
-      deploy:
-        provider: surge
-        project: ./esdoc/
-        domain: docs.sequelizejs.com
-        skip_cleanup: true
-        on:
-          branch: master
-    - stage: release
-      node_js: 8
-      env: BUILD_LEADER_ID=8
-      script:
-        - npm install --no-save --no-package-lock semantic-release@8 @bubltechnology/customizable-commit-analyzer@1.0.2-0
         - npm run lint
-      after_success:
-        - ./node_modules/.bin/semantic-release pre && npm publish && ./node_modules/.bin/semantic-release post
+        - npm run lint-docs
+    - stage: test
+      node_js: '12'
+      env: ORACLE_VER=oracle-12c DIALECT=oracle
+    - stage: test
+      node_js: '12'
+      env: ORACLE_VER=oracle-12c DIALECT=oracle COVERAGE=true
+    - stage: test
+      node_js: '12'
+      env: DIALECT=sqlite
+    - stage: test
+      node_js: '12'
+      sudo: required
+      env: MARIADB_VER=mariadb-105 SEQ_MARIADB_PORT=8960 DIALECT=mariadb
+    - stage: test
+      node_js: '12'
+      sudo: required
+      env: MYSQL_VER=mysql-57 SEQ_MYSQL_PORT=8980 DIALECT=mysql
+    - stage: test
+      node_js: '12'
+      sudo: required
+      env: POSTGRES_VER=postgres-10 SEQ_PG_PORT=8991 DIALECT=postgres
+    - stage: test
+      node_js: '12'
+      sudo: required
+      env: POSTGRES_VER=postgres-10 SEQ_PG_PORT=8991 SEQ_PG_MINIFY_ALIASES=1 DIALECT=postgres
+      script:
+        - npm run tsc
+        - npm run cover-integration
+        - bash <(curl -s https://codecov.io/bash) -f coverage/integration.info
+    - stage: test
+      node_js: '12'
+      sudo: required
+      env: POSTGRES_VER=postgres-95 SEQ_PG_PORT=8990 DIALECT=postgres-native
+    - stage: release
+      node_js: '12'
+      script:
+        - npm run tsc
+        #- npm run semantic-release
+
+stages:
+  - lint
+  - test
+  - name: release
+    if: branch = master AND type = push AND fork = false

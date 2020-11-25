@@ -6,7 +6,6 @@ services:
     links:
      - mysql-57
      - postgres-95
-     - mssql
      - oracle-12c
     volumes:
       - .:/sequelize
@@ -17,14 +16,48 @@ services:
 
   # PostgreSQL
   postgres-95:
-    image: camptocamp/postgis:9.5
+    image: sushantdhiman/postgres:9.5
     environment:
       POSTGRES_USER: sequelize_test
       POSTGRES_PASSWORD: sequelize_test
       POSTGRES_DB: sequelize_test
     ports:
-      - "127.0.0.1:8998:5432"
+      - "8990:5432"
     container_name: postgres-95
+
+  postgres-10:
+    image: sushantdhiman/postgres:10
+    environment:
+      POSTGRES_USER: sequelize_test
+      POSTGRES_PASSWORD: sequelize_test
+      POSTGRES_DB: sequelize_test
+    ports:
+      - "8991:5432"
+    container_name: postgres-10
+
+  postgres-12:
+    image: sushantdhiman/postgres:12
+    environment:
+      POSTGRES_USER: sequelize_test
+      POSTGRES_PASSWORD: sequelize_test
+      POSTGRES_DB: sequelize_test
+    ports:
+      - "8992:5432"
+    container_name: postgres-12
+
+  # MariaDB
+  mariadb-105:
+    image: mariadb:10.5
+    environment:
+      MYSQL_ROOT_PASSWORD: lollerskates
+      MYSQL_DATABASE: sequelize_test
+      MYSQL_USER: sequelize_test
+      MYSQL_PASSWORD: sequelize_test
+    volumes:
+    - $MARIADB_ENTRYPOINT:/docker-entrypoint-initdb.d
+    ports:
+    - "8960:3306"
+    container_name: mariadb-105
 
   # MySQL
   mysql-57:
@@ -34,8 +67,10 @@ services:
       MYSQL_DATABASE: sequelize_test
       MYSQL_USER: sequelize_test
       MYSQL_PASSWORD: sequelize_test
+    volumes:
+    - $MYSQLDB_ENTRYPOINT:/docker-entrypoint-initdb.d
     ports:
-      - "127.0.0.1:8999:3306"
+      - "8980:3306"
     container_name: mysql-57
 
   oracle-12c:
@@ -51,5 +86,5 @@ services:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: yourStrong(!)Password
     ports:
-      - "127.0.0.1:8997:1433"
+      - "8970:1433"
     container_name: mssql
