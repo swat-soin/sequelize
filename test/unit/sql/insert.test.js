@@ -34,6 +34,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           mssql:
             'DECLARE @tmp TABLE ([id] INTEGER,[user_name] NVARCHAR(255)); INSERT INTO [users] ([user_name]) OUTPUT INSERTED.[id],INSERTED.[user_name] INTO @tmp VALUES ($1); SELECT * FROM @tmp;',
           postgres: 'INSERT INTO "users" ("user_name") VALUES ($1) RETURNING "id","user_name";',
+          oracle: "INSERT INTO users (user_name) VALUES ('triggertest') RETURNING id INTO $:id;INTEGER$",
           default: 'INSERT INTO `users` (`user_name`) VALUES ($1);'
         },
         bind: ['triggertest']
@@ -70,12 +71,14 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           query: {
             postgres: 'INSERT INTO "users" ("date") VALUES ($1);',
             mssql: 'INSERT INTO [users] ([date]) VALUES ($1);',
+            oracle: 'INSERT INTO users ("date") VALUES ($1)',
             default: 'INSERT INTO `users` (`date`) VALUES ($1);'
           },
           bind: {
             sqlite: ['2015-01-20 00:00:00.000 +00:00'],
             mysql: ['2015-01-20 01:00:00'],
             mariadb: ['2015-01-20 01:00:00.000'],
+            oracle: ["TO_TIMESTAMP_TZ('2015-01-20 01:00:00.000 +01:00','YYYY-MM-DD HH24:MI:SS.FFTZH:TZM')"],
             default: ['2015-01-20 01:00:00.000 +01:00']
           }
         }
@@ -110,12 +113,14 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           query: {
             postgres: 'INSERT INTO "users" ("date") VALUES ($1);',
             mssql: 'INSERT INTO [users] ([date]) VALUES ($1);',
+            oracle: 'INSERT INTO users ("date") VALUES ($1)', //TODO: validate if that works correctly with oracle
             default: 'INSERT INTO `users` (`date`) VALUES ($1);'
           },
           bind: {
             sqlite: ['2015-01-20 01:02:03.089 +00:00'],
             mariadb: ['2015-01-20 02:02:03.089'],
             mysql: ['2015-01-20 02:02:03.089'],
+            oracle: ["TO_TIMESTAMP_TZ('2015-01-20 02:02:03.089 +01:00','YYYY-MM-DD HH24:MI:SS.FFTZH:TZM')"],
             default: ['2015-01-20 02:02:03.089 +01:00']
           }
         }

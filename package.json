@@ -31,6 +31,7 @@
     "debug": "^4.1.1",
     "dottie": "^2.0.0",
     "inflection": "1.12.0",
+    "js-crc": "^0.1.0",
     "lodash": "^4.17.15",
     "moment": "^2.26.0",
     "moment-timezone": "^0.5.31",
@@ -116,6 +117,9 @@
       "optional": true
     }
   },
+  "optionalDependencies": {
+    "oracledb": "^1.11.0"
+  },
   "keywords": [
     "mysql",
     "mariadb",
@@ -177,12 +181,14 @@
     "test-unit-mysql": "cross-env DIALECT=mysql npm run test-unit",
     "test-unit-postgres": "cross-env DIALECT=postgres npm run test-unit",
     "test-unit-postgres-native": "cross-env DIALECT=postgres-native npm run test-unit",
+    "test-unit-oracle": "cross-env DIALECT=oracle npm run test-unit",
     "test-unit-sqlite": "cross-env DIALECT=sqlite npm run test-unit",
     "test-unit-mssql": "cross-env DIALECT=mssql npm run test-unit",
     "test-unit-all": "npm run test-unit-mariadb && npm run test-unit-mysql && npm run test-unit-postgres && npm run test-unit-postgres-native && npm run test-unit-mssql && npm run test-unit-sqlite",
     "test-integration": "mocha --require scripts/mocha-bootload --globals setImmediate,clearImmediate --exit --check-leaks --colors -t 30000 --reporter spec \"test/integration/**/*.test.js\"",
     "test-integration-mariadb": "cross-env DIALECT=mariadb npm run test-integration",
     "test-integration-mysql": "cross-env DIALECT=mysql npm run test-integration",
+    "test-integration-oracle": "cross-env DIALECT=oracle npm run test-integration",
     "test-integration-postgres": "cross-env DIALECT=postgres npm run test-integration",
     "test-integration-postgres-native": "cross-env DIALECT=postgres-native npm run test-integration",
     "test-integration-sqlite": "cross-env DIALECT=sqlite npm run test-integration",
@@ -190,13 +196,14 @@
     "test-integration-all": "npm run test-integration-mariadb && npm run test-integration-mysql && npm run test-integration-postgres && npm run test-integration-postgres-native && npm run test-integration-mssql && npm run test-integration-sqlite",
     "test-mariadb": "cross-env DIALECT=mariadb npm test",
     "test-mysql": "cross-env DIALECT=mysql npm test",
+    "test-oracle": "cross-env DIALECT=oracle npm test",
     "test-sqlite": "cross-env DIALECT=sqlite npm test",
     "test-postgres": "cross-env DIALECT=postgres npm test",
     "test-pgsql": "npm run test-postgres",
     "test-postgres-native": "cross-env DIALECT=postgres-native npm test",
     "test-postgresn": "npm run test-postgres-native",
     "test-mssql": "cross-env DIALECT=mssql npm test",
-    "test-all": "npm run test-mariadb && npm run test-mysql && npm run test-sqlite && npm run test-postgres && npm run test-postgres-native && npm run test-mssql",
+    "test-all": "npm run test-mariadb && npm run test-mysql && npm run test-sqlite && npm run test-postgres && npm run test-postgres-native && npm run test-mssql && npm run test-oracle",
     "cover": "rimraf coverage && npm run teaser && npm run cover-integration && npm run cover-unit && npm run merge-coverage",
     "cover-integration": "cross-env COVERAGE=true nyc --reporter=lcovonly mocha --require scripts/mocha-bootload -t 30000 --exit \"test/integration/**/*.test.js\" && node -e \"require('fs').renameSync('coverage/lcov.info', 'coverage/integration.info')\"",
     "cover-unit": "cross-env COVERAGE=true nyc --reporter=lcovonly mocha --require scripts/mocha-bootload -t 30000 --exit \"test/unit/**/*.test.js\" && node -e \"require('fs').renameSync('coverage/lcov.info', 'coverage/unit.info')\"",

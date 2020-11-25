@@ -107,10 +107,10 @@ describe(Support.getTestDialectTeaser('QueryInterface'), () => {
       });
       await this.queryInterface.renameTable('my_test_table', 'my_test_table_new');
       let tableNames = await this.queryInterface.showAllTables();
-      if (dialect === 'mssql' || dialect === 'mariadb') {
+      if (dialect === 'mssql' || dialect === 'mariadb' || dialect === 'oracle') {
         tableNames = tableNames.map(v => v.tableName);
       }
-      expect(tableNames).to.contain('my_test_table_new');
+      expect(tableNames).to.contain(dialect === 'oracle' ? 'MYTESTTABLENEW' : 'my_test_table_new');
       expect(tableNames).to.not.contain('my_test_table');
     });
   });
@@ -147,7 +147,14 @@ describe(Support.getTestDialectTeaser('QueryInterface'), () => {
       if (dialect === 'mssql' || dialect === 'mariadb') {
         tableNames = tableNames.map(v => v.tableName);
       }
-      expect(tableNames).to.contain('skipme');
+
+      if (dialect === 'oracle') {
+        //AS always, everything is upper case with Oracle
+        tableNames = _.map(tableNames, 'tableName');
+        expect(tableNames).to.contain('SKIPME');
+      } else {
+        expect(tableNames).to.contain('skipme');
+      }
     });
   });
 

@@ -18,8 +18,27 @@ const qq = str => {
   if (dialect === 'mysql' || dialect === 'mariadb' || dialect === 'sqlite') {
     return `\`${str}\``;
   }
+  if (dialect === 'oracle') {
+    if (str.indexOf('.') > -1) {
+      return `"${str}"`;
+    }
+    return str.replace('user', '"user"');
+  }
   return str;
 };
+
+//Function adding the from dual clause for Oracle requests
+/*
+const formatQuery = (qry, force) => {
+  if (dialect === 'oracle' && (qry.indexOf('FROM') === -1 || (force !== undefined && force))) {
+    if (qry.charAt(qry.length - 1) === ';') {
+      qry = qry.substr(0, qry.length - 1);
+    }
+    return qry + ' FROM DUAL';
+  }
+  return qry;
+};
+*/
 
 describe(Support.getTestDialectTeaser('Sequelize'), () => {
   describe('constructor', () => {
@@ -126,7 +145,8 @@ describe(Support.getTestDialectTeaser('Sequelize'), () => {
                 err.message.includes('invalid port number') ||
                 err.message.match(/should be >=? 0 and < 65536/) ||
                 err.message.includes('Login failed for user') ||
-                err.message.includes('must be > 0 and < 65536')
+                err.message.includes('must be > 0 and < 65536') ||
+                err.message.match(/ORA-12541/)
             ).to.be.ok;
           }
         });
@@ -379,7 +399,11 @@ describe(Support.getTestDialectTeaser('Sequelize'), () => {
       if (dialect === 'mssql' || dialect === 'mariadb') {
         tableNames = tableNames.map(v => v.tableName);
       }
-      expect(tableNames).to.include('photos');
+      if (dialect === 'oracle') {
+        expect(tableNames).to.include('PHOTOS');
+      } else {
+        expect(tableNames).to.include('photos');
+      }
     });
   });
 
@@ -481,6 +505,10 @@ describe(Support.getTestDialectTeaser('Sequelize'), () => {
             );
           } else if (dialect === 'mssql') {
             expect(err.message).to.equal("Login failed for user 'bar'.");
+          } else if (dialect === 'oracle') {
+            expect(err.message).to.equal(
+              'ORA-12514: TNS:listener does not currently know of service requested in connect descriptor\n'
+            );
           } else {
             expect(err.message.toString()).to.match(/.*Access denied.*/);
           }

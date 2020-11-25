@@ -30,6 +30,10 @@ describe(Support.getTestDialectTeaser('DataTypes'), () => {
       if (!moment.isMoment(value)) {
         value = this._applyTimezone(value, options);
       }
+
+      if (dialect === 'oracle') {
+        return `TO_TIMESTAMP('${value.format('YYYY-MM-DD HH:mm:ss')}','YYYY-MM-DD HH24:MI:SS.FFTZH')`;
+      }
       return value.format('YYYY-MM-DD HH:mm:ss');
     }));
 
@@ -181,6 +185,12 @@ describe(Support.getTestDialectTeaser('DataTypes'), () => {
     await testSuccess(Type, 'foobar');
   });
 
+  it('calls parse and stringify for BLOB', () => {
+    const Type = new Sequelize.BLOB();
+
+    return testSuccess(Type, 'foobar');
+  });
+
   it('calls parse and stringify/bindParam for STRING', async () => {
     const Type = new Sequelize.STRING();
 
@@ -197,7 +207,7 @@ describe(Support.getTestDialectTeaser('DataTypes'), () => {
   it('calls parse and stringify for TEXT', async () => {
     const Type = new Sequelize.TEXT();
 
-    if (dialect === 'mssql') {
+    if (dialect === 'mssql' || dialect === 'oracle') {
       // Text uses nvarchar, same type as string
       testFailure(Type);
     } else {
@@ -220,13 +230,18 @@ describe(Support.getTestDialectTeaser('DataTypes'), () => {
   it('calls parse and stringify for DECIMAL', async () => {
     const Type = new Sequelize.DECIMAL();
 
-    await testSuccess(Type, 1.5);
+    if (dialect === 'oracle') {
+      //Oracle does not support decimal, mapping to number
+      testFailure(Type);
+    } else {
+      await testSuccess(Type, 1.5);
+    }
   });
 
   it('calls parse and stringify for BIGINT', async () => {
     const Type = new Sequelize.BIGINT();
 
-    if (dialect === 'mssql') {
+    if (dialect === 'mssql' || dialect === 'oracle') {
       // Same type as integer
       testFailure(Type);
     } else {
@@ -295,13 +310,18 @@ describe(Support.getTestDialectTeaser('DataTypes'), () => {
   it('calls parse and bindParam for DOUBLE', async () => {
     const Type = new Sequelize.DOUBLE();
 
-    await testSuccess(Type, 1.5, { useBindParam: true });
+    if (dialect === 'oracle') {
+      // Oracle doesn't have float, maps to either number
+      testFailure(Type);
+    } else {
+      await testSuccess(Type, 1.5, { useBindParam: true });
+    }
   });
 
   it('calls parse and bindParam for FLOAT', async () => {
     const Type = new Sequelize.FLOAT();
 
-    if (dialect === 'postgres') {
+    if (dialect === 'postgres' || dialect === 'oracle') {
       // Postgres doesn't have float, maps to either decimal or double
       testFailure(Type);
     } else {
@@ -312,7 +332,12 @@ describe(Support.getTestDialectTeaser('DataTypes'), () => {
   it('calls parse and bindParam for REAL', async () => {
     const Type = new Sequelize.REAL();
 
-    await testSuccess(Type, 1.5, { useBindParam: true });
+    if (dialect === 'oracle') {
+      // Oracle doesn't have float, maps to either decimal or double
+      testFailure(Type);
+    } else {
+      await testSuccess(Type, 1.5, { useBindParam: true });
+    }
   });
 
   it('calls parse and stringify for UUID', async () => {
@@ -767,6 +792,12 @@ describe(Support.getTestDialectTeaser('DataTypes'), () => {
     expect(byte.byteToBool).to.be.ok;
 
     const bool = await BoolModel.findByPk(byte.id);
-    expect(bool.byteToBool).to.be.true;
+    if (dialect === 'oracle') {
+      bool.byteToBool.read(content => {
+        expect(content).to.be.true;
+      });
+    } else {
+      expect(bool.byteToBool).to.be.true;
+    }
   });
 });

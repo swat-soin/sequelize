@@ -29,7 +29,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
       };
       expectsql(sql.updateQuery(User.tableName, { user_name: 'triggertest' }, { id: 2 }, options, User.rawAttributes), {
         query: {
-          default: 'UPDATE [users] SET [user_name]=$1 WHERE [id] = $2'
+          default: 'UPDATE [users] SET [user_name]=$1 WHERE [id] = $2',
+          oracle: "UPDATE users SET user_name='triggertest' WHERE id = 2"
         },
         bind: {
           default: ['triggertest', 2]
@@ -92,6 +93,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           mysql: 'UPDATE `Users` SET `username`=$1 WHERE `username` = $2 LIMIT 1',
           sqlite:
             'UPDATE `Users` SET `username`=$1 WHERE rowid IN (SELECT rowid FROM `Users` WHERE `username` = $2 LIMIT 1)',
+          oracle: "UPDATE Users SET username='new.username' WHERE username = 'username' AND rownum <= 1",
           default: 'UPDATE [Users] SET [username]=$1 WHERE [username] = $2'
         },
         bind: {

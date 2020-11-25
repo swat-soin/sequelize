@@ -249,7 +249,16 @@ describe(Support.getTestDialectTeaser('Model'), () => {
         const user = await this.User.findByPk(42);
         expect(user.createdAt).to.be.ok;
         expect(user.username).to.equal('doe');
-        expect(user.blob.toString()).to.equal('andrea');
+
+        if (dialect === 'oracle') {
+          user.blob.iLob.read((err, lobData) => {
+            expect(lobData).to.be.an.instanceOf(Buffer);
+            expect(lobData.toString()).to.have.string('andrea');
+          });
+        } else {
+          expect(user.blob.toString()).to.equal('andrea');
+        }
+
         expect(user.updatedAt).to.be.afterTime(user.createdAt);
       });
 

@@ -97,32 +97,35 @@ describe(Support.getTestDialectTeaser('BelongsTo'), () => {
       });
     }
 
-    it("should be able to handle a where object that's a first class citizen.", async function () {
-      const User = this.sequelize.define('UserXYZ', {
-          username: Sequelize.STRING,
-          gender: Sequelize.STRING
-        }),
-        Task = this.sequelize.define('TaskXYZ', {
-          title: Sequelize.STRING,
-          status: Sequelize.STRING
-        });
+    if (current.dialect.name !== 'oracle') {
+      //Oracle doesn't support column names non quoted by "
+      it("should be able to handle a where object that's a first class citizen.", async function () {
+        const User = this.sequelize.define('UserXYZ', {
+            username: Sequelize.STRING,
+            gender: Sequelize.STRING
+          }),
+          Task = this.sequelize.define('TaskXYZ', {
+            title: Sequelize.STRING,
+            status: Sequelize.STRING
+          });
 
-      Task.belongsTo(User);
+        Task.belongsTo(User);
 
-      await User.sync({ force: true });
-      // Can't use Promise.all cause of foreign key references
-      await Task.sync({ force: true });
+        await User.sync({ force: true });
+        // Can't use Promise.all cause of foreign key references
+        await Task.sync({ force: true });
 
-      const [userA, , task] = await Promise.all([
-        User.create({ username: 'foo', gender: 'male' }),
-        User.create({ username: 'bar', gender: 'female' }),
-        Task.create({ title: 'task', status: 'inactive' })
-      ]);
+        const [userA, , task] = await Promise.all([
+          User.create({ username: 'foo', gender: 'male' }),
+          User.create({ username: 'bar', gender: 'female' }),
+          Task.create({ title: 'task', status: 'inactive' })
+        ]);
 
-      await task.setUserXYZ(userA);
-      const user = await task.getUserXYZ({ where: { gender: 'female' } });
-      expect(user).to.be.null;
-    });
+        await task.setUserXYZ(userA);
+        const user = await task.getUserXYZ({ where: { gender: 'female' } });
+        expect(user).to.be.null;
+      });
+    }
 
     it('supports schemas', async function () {
       const User = this.sequelize
@@ -680,8 +683,8 @@ describe(Support.getTestDialectTeaser('BelongsTo'), () => {
       });
     }
 
-    // NOTE: mssql does not support changing an autoincrement primary key
-    if (Support.getTestDialect() !== 'mssql') {
+    // NOTE: mssql does not support changing an autoincrement primary key / oracle does not support cascade update
+    if (Support.getTestDialect() !== 'mssql' && Support.getTestDialect() !== 'oracle') {
       it('can cascade updates', async function () {
         const Task = this.sequelize.define('Task', { title: DataTypes.STRING }),
           User = this.sequelize.define('User', { username: DataTypes.STRING });

@@ -589,31 +589,33 @@ describe(Support.getTestDialectTeaser('Instance'), () => {
       expect(user.isSoftDeleted()).to.be.true;
     });
 
-    it('works with custom `deletedAt` field name', async function () {
-      this.ParanoidUserWithCustomDeletedAt = this.sequelize.define(
-        'ParanoidUserWithCustomDeletedAt',
-        {
-          username: { type: DataTypes.STRING }
-        },
-        {
-          deletedAt: 'deletedAtThisTime',
-          paranoid: true
-        }
-      );
+    if (dialect !== 'oracle') {
+      it('works with custom `deletedAt` field name', async function () {
+        this.ParanoidUserWithCustomDeletedAt = this.sequelize.define(
+          'ParanoidUserWithCustomDeletedAt',
+          {
+            username: { type: DataTypes.STRING }
+          },
+          {
+            deletedAt: 'deletedAtThisTime',
+            paranoid: true
+          }
+        );
 
-      this.ParanoidUserWithCustomDeletedAt.hasOne(this.ParanoidUser);
+        this.ParanoidUserWithCustomDeletedAt.hasOne(this.ParanoidUser);
 
-      await this.ParanoidUserWithCustomDeletedAt.sync({ force: true });
-      await this.ParanoidUserWithCustomDeletedAt.create({ username: 'fnord' });
-      const users = await this.ParanoidUserWithCustomDeletedAt.findAll();
-      expect(users[0].isSoftDeleted()).to.be.false;
+        await this.ParanoidUserWithCustomDeletedAt.sync({ force: true });
+        await this.ParanoidUserWithCustomDeletedAt.create({ username: 'fnord' });
+        const users = await this.ParanoidUserWithCustomDeletedAt.findAll();
+        expect(users[0].isSoftDeleted()).to.be.false;
 
-      await users[0].destroy();
-      expect(users[0].isSoftDeleted()).to.be.true;
+        await users[0].destroy();
+        expect(users[0].isSoftDeleted()).to.be.true;
 
-      const user = await users[0].reload({ paranoid: false });
-      expect(user.isSoftDeleted()).to.be.true;
-    });
+        const user = await users[0].reload({ paranoid: false });
+        expect(user.isSoftDeleted()).to.be.true;
+      });
+    }
   });
 
   describe('restore', () => {

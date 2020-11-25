@@ -197,7 +197,7 @@ describe(Support.getTestDialectTeaser('Model'), () => {
       });
     });
 
-    if (!['sqlite', 'mssql'].includes(current.dialect.name)) {
+    if (!['sqlite', 'mssql', 'oracle'].includes(current.dialect.name)) {
       it('should not deadlock with no existing entries and no outer transaction', async function () {
         const User = this.sequelize.define('User', {
           email: {
@@ -485,7 +485,7 @@ describe(Support.getTestDialectTeaser('Model'), () => {
         });
       }
 
-      (dialect !== 'sqlite' && dialect !== 'mssql' ? it : it.skip)(
+      (dialect !== 'sqlite' && dialect !== 'mssql' && dialect !== 'oracle' ? it : it.skip)(
         'should not fail silently with concurrency higher than pool, a unique constraint and a create hook resulting in mismatched values',
         async function () {
           const User = this.sequelize.define('user', {
@@ -1203,28 +1203,31 @@ describe(Support.getTestDialectTeaser('Model'), () => {
       expect(user.options).to.equal(options);
     });
 
-    it('allows sql logging', async function () {
-      const User = this.sequelize.define('UserWithUniqueNameAndNonNullSmth', {
-        name: { type: Sequelize.STRING, unique: true },
-        smth: { type: Sequelize.STRING, allowNull: false }
-      });
+    //Oracle -> table names are restricted to 30 chars
+    if (current.dialect.name !== 'oracle') {
+      it('allows sql logging', async function () {
+        const User = this.sequelize.define('UserWithUniqueNameAndNonNullSmth', {
+          name: { type: Sequelize.STRING, unique: true },
+          smth: { type: Sequelize.STRING, allowNull: false }
+        });
 
-      let test = false;
-      await User.sync({ force: true });
+        let test = false;
+        await User.sync({ force: true });
 
-      await User.create(
-        { name: 'Fluffy Bunny', smth: 'else' },
-        {
-          logging(sql) {
-            expect(sql).to.exist;
-            test = true;
-            expect(sql.toUpperCase()).to.contain('INSERT');
+        await User.create(
+          { name: 'Fluffy Bunny', smth: 'else' },
+          {
+            logging(sql) {
+              expect(sql).to.exist;
+              test = true;
+              expect(sql.toUpperCase()).to.contain('INSERT');
+            }
           }
-        }
-      );
+        );
 
-      expect(test).to.be.true;
-    });
+        expect(test).to.be.true;
+      });
+    }
 
     it('should only store the values passed in the whitelist', async function () {
       const data = { username: 'Peter', secretValue: '42' };

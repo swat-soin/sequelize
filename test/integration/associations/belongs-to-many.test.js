@@ -3250,6 +3250,8 @@ describe(Support.getTestDialectTeaser('BelongsToMany'), () => {
       let result = await this.sequelize.getQueryInterface().showAllTables();
       if (dialect === 'mssql' || dialect === 'mariadb') {
         result = result.map(v => v.tableName);
+      } else if (dialect === 'oracle') {
+        result = result.map(v => v.tableName.toLowerCase());
       }
 
       expect(result.includes('group_user')).to.be.true;

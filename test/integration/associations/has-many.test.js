@@ -440,6 +440,15 @@ describe(Support.getTestDialectTeaser('HasMany'), () => {
           expect(users[1].tasks[1].subtasks.length).to.equal(2);
           expect(users[1].tasks[1].subtasks[0].title).to.equal('b');
           expect(users[1].tasks[1].subtasks[1].title).to.equal('a');
+
+          if (dialect !== 'oracle') {
+            //As Oracle doesn't have an order by inner mechanism, the results are never ordered in the same way, so we don't pass here
+            expect(users[0].id[0].title).to.equal('a');
+            expect(users[0].id[1].title).to.equal('b');
+            expect(users[1].id[0].title).to.equal('a');
+            expect(users[1].id[1].title).to.equal('b');
+          }
+
           await this.sequelize.dropSchema('work');
           const schemas = await this.sequelize.showAllSchemas();
           if (dialect === 'postgres' || dialect === 'mssql' || schemas === 'mariadb') {
@@ -992,36 +1001,38 @@ describe(Support.getTestDialectTeaser('HasMany'), () => {
         return john.setTasks([task1, task2]);
       });
 
-      it('should treat the where object of associations as a first class citizen', async function () {
-        this.Article = this.sequelize.define('Article', {
-          title: DataTypes.STRING
+      if (dialect !== 'oracle') {
+        it('should treat the where object of associations as a first class citizen', async function () {
+          this.Article = this.sequelize.define('Article', {
+            title: DataTypes.STRING
+          });
+          this.Label = this.sequelize.define('Label', {
+            text: DataTypes.STRING,
+            until: DataTypes.DATE
+          });
+
+          this.Article.hasMany(this.Label);
+
+          await this.sequelize.sync({ force: true });
+
+          const [article, label1, label2] = await Promise.all([
+            this.Article.create({ title: 'Article' }),
+            this.Label.create({
+              text: 'Awesomeness',
+              until: '2014-01-01 01:00:00'
+            }),
+            this.Label.create({ text: 'Epicness', until: '2014-01-03 01:00:00' })
+          ]);
+
+          await article.setLabels([label1, label2]);
+          const labels = await article.getLabels({
+            where: { until: { [Op.gt]: moment('2014-01-02').toDate() } }
+          });
+          expect(labels).to.be.instanceof(Array);
+          expect(labels).to.have.length(1);
+          expect(labels[0].text).to.equal('Epicness');
         });
-        this.Label = this.sequelize.define('Label', {
-          text: DataTypes.STRING,
-          until: DataTypes.DATE
-        });
-
-        this.Article.hasMany(this.Label);
-
-        await this.sequelize.sync({ force: true });
-
-        const [article, label1, label2] = await Promise.all([
-          this.Article.create({ title: 'Article' }),
-          this.Label.create({
-            text: 'Awesomeness',
-            until: '2014-01-01 01:00:00'
-          }),
-          this.Label.create({ text: 'Epicness', until: '2014-01-03 01:00:00' })
-        ]);
-
-        await article.setLabels([label1, label2]);
-        const labels = await article.getLabels({
-          where: { until: { [Op.gt]: moment('2014-01-02').toDate() } }
-        });
-        expect(labels).to.be.instanceof(Array);
-        expect(labels).to.have.length(1);
-        expect(labels[0].text).to.equal('Epicness');
-      });
+      }
 
       it('gets all associated objects when no options are passed', async function () {
         const john = await this.User.findOne({ where: { username: 'John' } });
@@ -1172,7 +1183,8 @@ describe(Support.getTestDialectTeaser('HasMany'), () => {
       });
 
       // NOTE: mssql does not support changing an autoincrement primary key
-      if (dialect !== 'mssql') {
+      // NOTE: oracle does not support cascade constrait -> ORA-02292: integrity constraint - child record found
+      if (dialect !== 'mssql' && dialect !== 'oracle') {
         it('can cascade updates', async function () {
           const Task = this.sequelize.define('Task', {
               title: DataTypes.STRING

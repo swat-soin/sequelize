@@ -23,16 +23,39 @@ env:
     - SEQ_PW=sequelize_test
     - SEQ_HOST=127.0.0.1
     - COVERAGE=true
+    - NODE_ORACLEDB_HOST: localhost
+
+before_install:
+  - |
+    if [ $ORACLE_VER ]; then 
+      mkdir -p /opt/oracle && 
+      cd /opt/oracle && 
+      wget https://s3.amazonaws.com/sequelize/instantclient-basic-linux.x64-12.2.0.1.0.zip &&
+      wget https://s3.amazonaws.com/sequelize/instantclient-sdk-linux.x64-12.2.0.1.0.zip &&
+      unzip instantclient-basic-linux.x64-12.2.0.1.0.zip &&
+      unzip instantclient-sdk-linux.x64-12.2.0.1.0.zip &&
+      mv instantclient_12_2 instantclient &&
+      cd instantclient && 
+      ln -s libclntsh.so.12.1 libclntsh.so &&
+      export LD_LIBRARY_PATH=/opt/oracle/instantclient:$LD_LIBRARY_PATH &&
+      cd $TRAVIS_BUILD_DIR;
+    fi
+
 
 before_script:
-  # setup docker
+  # setup docker  
   - if [ $MARIADB_VER ]; then export MARIADB_ENTRYPOINT=$TRAVIS_BUILD_DIR/test/config/mariadb; fi
   - if [ $MYSQL_VER ]; then export MYSQLDB_ENTRYPOINT=$TRAVIS_BUILD_DIR/test/config/mysql; fi
-  - if [ $POSTGRES_VER ] || [ $MARIADB_VER ] || [ $MYSQL_VER ]; then docker-compose up -d ${POSTGRES_VER} ${MARIADB_VER} ${MYSQL_VER}; fi
+  - if [ $POSTGRES_VER ] || [ $MARIADB_VER ] || [ $MYSQL_VER ] || [ $ORACLE_VER ]; then docker-compose up -d ${POSTGRES_VER} ${MARIADB_VER} ${MYSQL_VER} ${$ORACLE_VER}; fi
   - wait_for() { docker run --net sequelize_default jwilder/dockerize -timeout 2m -wait "$1"; }
   - if [ $POSTGRES_VER ]; then wait_for tcp://${POSTGRES_VER}:5432; fi
   - if [ $MARIADB_VER ]; then wait_for tcp://${MARIADB_VER}:3306; fi
   - if [ $MYSQL_VER ]; then wait_for tcp://${MYSQL_VER}:3306; fi
+  - |
+    if [ $ORACLE_VER ]; then 
+      docker run --link ${ORACLE_VER}:db -e CHECK_PORT=1521 -e CHECK_HOST=db --net sequelize_default giorgos/takis
+      sleep 20
+    fi
 
 script:
   - npm run tsc
@@ -45,6 +68,12 @@ jobs:
       script:
         - npm run lint
         - npm run lint-docs
+    - stage: test
+      node_js: '12'
+      env: ORACLE_VER=oracle-12c DIALECT=oracle
+    - stage: test
+      node_js: '12'
+      env: ORACLE_VER=oracle-12c DIALECT=oracle COVERAGE=true
     - stage: test
       node_js: '12'
       env: DIALECT=sqlite

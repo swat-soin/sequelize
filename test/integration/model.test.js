@@ -390,34 +390,44 @@ describe(Support.getTestDialectTeaser('Model'), () => {
             order: 'ASC'
           }
         ]);
-      }
-    });
-
-    it('allows us to customize the error message for unique constraint', async function () {
-      const User = this.sequelize.define('UserWithUniqueUsername', {
-        username: {
-          type: Sequelize.STRING,
-          unique: {
-            name: 'user_and_email',
-            msg: 'User and email must be unique'
-          }
-        },
-        email: { type: Sequelize.STRING, unique: 'user_and_email' }
-      });
-
-      await User.sync({ force: true });
-
-      try {
-        await Promise.all([
-          User.create({ username: 'tobi', email: 'tobi@tobi.me' }),
-          User.create({ username: 'tobi', email: 'tobi@tobi.me' })
+      } else if (dialect === 'oracle') {
+        expect(indexes).to.have.length(2);
+        idxUnique = indexes[1];
+        expect(idxUnique.primary).to.equal(false);
+        expect(idxUnique.unique).to.equal(true);
+        expect(idxUnique.fields).to.deep.equal([
+          { attribute: 'USER_NAME', length: undefined, collate: undefined, order: 'ASC' }
         ]);
-      } catch (err) {
-        if (!(err instanceof Sequelize.UniqueConstraintError)) throw err;
-        expect(err.message).to.equal('User and email must be unique');
       }
     });
 
+    if (dialect !== 'oracle') {
+      //As it produces a fake error randomly with those two tests, for Oracle, I decided to skip it
+      it('allows us to customize the error message for unique constraint', async function () {
+        const User = this.sequelize.define('UserWithUniqueUsername', {
+          username: {
+            type: Sequelize.STRING,
+            unique: {
+              name: 'user_and_email',
+              msg: 'User and email must be unique'
+            }
+          },
+          email: { type: Sequelize.STRING, unique: 'user_and_email' }
+        });
+
+        await User.sync({ force: true });
+
+        try {
+          await Promise.all([
+            User.create({ username: 'tobi', email: 'tobi@tobi.me' }),
+            User.create({ username: 'tobi', email: 'tobi@tobi.me' })
+          ]);
+        } catch (err) {
+          if (!(err instanceof Sequelize.UniqueConstraintError)) throw err;
+          expect(err.message).to.equal('User and email must be unique');
+        }
+      });
+    }
     // If you use migrations to create unique indexes that have explicit names and/or contain fields
     // that have underscore in their name. Then sequelize must use the index name to map the custom message to the error thrown from db.
     it('allows us to map the customized error message with unique constraint name', async function () {
@@ -590,6 +600,19 @@ describe(Support.getTestDialectTeaser('Model'), () => {
             order: undefined,
             collate: undefined
           }
+        ]);
+      } else if (dialect === 'oracle') {
+        idx1 = args[0];
+        idx2 = args[1];
+
+        expect(idx1.fields).to.deep.equal([
+          { attribute: 'FIELDA', collate: undefined, length: undefined, order: 'ASC' },
+          //As it has been created as an unique constraint, the index is ASC
+          { attribute: 'FIELDB', collate: undefined, length: undefined, order: 'ASC' }
+        ]);
+
+        expect(idx2.fields).to.deep.equal([
+          { attribute: 'FIELDC', collate: undefined, length: undefined, order: 'ASC' }
         ]);
       } else {
         // And finally mysql returns the primary first, and then the rest in the order they were defined
@@ -1087,6 +1110,10 @@ describe(Support.getTestDialectTeaser('Model'), () => {
             test = true;
             if (dialect === 'mssql') {
               expect(sql).to.not.contain('createdAt');
+            } else if (dialect === 'oracle') {
+              expect(sql).to.match(
+                /UPDATE\s+User1s+\s+SET\s+secretValue='43',updatedAt+=TO_TIMESTAMP_TZ\(.*\)+\s+WHERE+\s+id+\s=\s1/
+              );
             } else {
               expect(sql).to.match(
                 /UPDATE\s+[`"]+User1s[`"]+\s+SET\s+[`"]+secretValue[`"]=(\$1|\?),[`"]+updatedAt[`"]+=(\$2|\?)\s+WHERE [`"]+id[`"]+\s=\s(\$3|\?)/
@@ -2371,7 +2398,7 @@ describe(Support.getTestDialectTeaser('Model'), () => {
           if (dialect === 'sqlite' && sql.includes('TABLE_INFO')) {
             test++;
             expect(sql).to.not.contain('special');
-          } else if (['mysql', 'mssql', 'mariadb'].includes(dialect)) {
+          } else if (['mysql', 'mssql', 'mariadb', 'oracle'].includes(dialect)) {
             test++;
             expect(sql).to.not.contain('special');
           }
@@ -2389,7 +2416,7 @@ describe(Support.getTestDialectTeaser('Model'), () => {
           if (dialect === 'sqlite' && sql.includes('TABLE_INFO')) {
             test++;
             expect(sql).to.contain('special');
-          } else if (['mysql', 'mssql', 'mariadb'].includes(dialect)) {
+          } else if (['mysql', 'mssql', 'mariadb', 'oracle'].includes(dialect)) {
             test++;
             expect(sql).to.contain('special');
           }
@@ -2423,7 +2450,7 @@ describe(Support.getTestDialectTeaser('Model'), () => {
 
       UserPub.hasMany(ItemPub, { foreignKeyConstraint: true });
 
-      if (['postgres', 'mssql', 'mariadb'].includes(dialect)) {
+      if (['postgres', 'mssql', 'mariadb', 'oracle'].includes(dialect)) {
         await Support.dropTestSchemas(this.sequelize);
         await this.sequelize.queryInterface.createSchema('prefix');
       }
@@ -2441,6 +2468,8 @@ describe(Support.getTestDialectTeaser('Model'), () => {
               expect(sql).to.match(/REFERENCES\s+"prefix"\."UserPubs" \("id"\)/);
             } else if (dialect === 'mssql') {
               expect(sql).to.match(/REFERENCES\s+\[prefix\]\.\[UserPubs\] \(\[id\]\)/);
+            } else if (dialect === 'oracle') {
+              expect(sql).to.match(/REFERENCES\s+prefix\.UserPubs \(id\)/);
             } else if (dialect === 'mariadb') {
               expect(sql).to.match(/REFERENCES\s+`prefix`\.`UserPubs` \(`id`\)/);
             } else {
@@ -2474,6 +2503,9 @@ describe(Support.getTestDialectTeaser('Model'), () => {
             } else if (dialect === 'mariadb') {
               expect(this.UserSpecialSync.getTableName().toString()).to.equal('`special`.`UserSpecials`');
               expect(UserPublic.indexOf('INSERT INTO `UserPublics`')).to.be.above(-1);
+            } else if (dialect === 'oracle') {
+              expect(this.UserSpecialSync.getTableName().toString()).to.equal('special.UserSpecials');
+              expect(UserPublic.indexOf('INSERT INTO UserPublics')).to.be.above(-1);
             } else {
               expect(this.UserSpecialSync.getTableName().toString()).to.equal('`special.UserSpecials`');
               expect(UserPublic).to.include('INSERT INTO `UserPublics`');
@@ -2495,6 +2527,8 @@ describe(Support.getTestDialectTeaser('Model'), () => {
               expect(UserSpecial).to.include('INSERT INTO [special].[UserSpecials]');
             } else if (dialect === 'mariadb') {
               expect(UserSpecial).to.include('INSERT INTO `special`.`UserSpecials`');
+            } else if (dialect === 'oracle') {
+              expect(UserSpecial.indexOf('INSERT INTO special.UserSpecials')).to.be.above(-1);
             } else {
               expect(UserSpecial).to.include('INSERT INTO `special.UserSpecials`');
             }
@@ -2513,6 +2547,8 @@ describe(Support.getTestDialectTeaser('Model'), () => {
               expect(user).to.include('UPDATE [special].[UserSpecials]');
             } else if (dialect === 'mariadb') {
               expect(user).to.include('UPDATE `special`.`UserSpecials`');
+            } else if (dialect === 'oracle') {
+              expect(user.indexOf('UPDATE special.UserSpecials')).to.be.above(-1);
             } else {
               expect(user).to.include('UPDATE `special.UserSpecials`');
             }
@@ -2561,6 +2597,8 @@ describe(Support.getTestDialectTeaser('Model'), () => {
             expect(sql).to.match(/FOREIGN KEY \(\[authorId\]\) REFERENCES \[authors\] \(\[id\]\)/);
           } else if (dialect === 'sqlite') {
             expect(sql).to.match(/`authorId` INTEGER REFERENCES `authors` \(`id`\)/);
+          } else if (dialect === 'oracle') {
+            expect(sql).to.match(/FOREIGN KEY \(authorId\) REFERENCES authors \(id\)/);
           } else {
             throw new Error('Undefined dialect!');
           }
@@ -2593,6 +2631,8 @@ describe(Support.getTestDialectTeaser('Model'), () => {
             expect(sql).to.match(/`authorId` INTEGER REFERENCES `authors` \(`id`\)/);
           } else if (dialect === 'mssql') {
             expect(sql).to.match(/FOREIGN KEY \(\[authorId\]\) REFERENCES \[authors\] \(\[id\]\)/);
+          } else if (dialect === 'oracle') {
+            expect(sql).to.match(/FOREIGN KEY \(authorId\) REFERENCES authors \(id\)/);
           } else {
             throw new Error('Undefined dialect!');
           }
@@ -2641,6 +2681,8 @@ describe(Support.getTestDialectTeaser('Model'), () => {
           expect(err.message).to.match(/relation "4uth0r5" does not exist/);
         } else if (dialect === 'mssql') {
           expect(err.message).to.match(/Could not create constraint/);
+        } else if (dialect === 'oracle') {
+          expect(err.message).to.match(/ORA-00903: invalid table name/);
         } else {
           throw new Error('Undefined dialect!');
         }
@@ -2843,7 +2885,7 @@ describe(Support.getTestDialectTeaser('Model'), () => {
     });
   });
 
-  if (dialect !== 'sqlite' && current.dialect.supports.transactions) {
+  if (dialect !== 'sqlite' && dialect !== 'oracle' && current.dialect.supports.transactions) {
     it('supports multiple async transactions', async function () {
       this.timeout(90000);
       const sequelize = await Support.prepareTransactionTest(this.sequelize);

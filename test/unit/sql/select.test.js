@@ -39,6 +39,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
       {
         default:
           "SELECT [email], [first_name] AS [firstName] FROM [User] WHERE [User].[email] = 'jon.snow@gmail.com' ORDER BY [email] DESC LIMIT 10;",
+        oracle:
+          'SELECT email, first_name AS firstName FROM "User" WHERE "User".email = \'jon.snow@gmail.com\' ORDER BY email DESC OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;',
         mssql:
           "SELECT [email], [first_name] AS [firstName] FROM [User] WHERE [User].[email] = N'jon.snow@gmail.com' ORDER BY [email] DESC OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;"
       }
@@ -63,7 +65,18 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           `SELECT * FROM (SELECT [email], [first_name] AS [firstName], [last_name] AS [lastName] FROM [User] WHERE [User].[companyId] = 5 ORDER BY [last_name] ASC${sql.addLimitAndOffset(
             { limit: 3, order: ['last_name', 'ASC'] }
           )}) AS sub`
-        ].join(current.dialect.supports['UNION ALL'] ? ' UNION ALL ' : ' UNION ')}) AS [User];`
+        ].join(current.dialect.supports['UNION ALL'] ? ' UNION ALL ' : ' UNION ')}) AS [User];`,
+        oracle:
+          'SELECT "User".* FROM (' +
+          [
+            '(SELECT email, first_name AS firstName, last_name AS lastName FROM "User" WHERE "User".companyId = 1 ORDER BY last_name ASC' +
+              sql.addLimitAndOffset({ limit: 3, order: ['last_name', 'ASC'] }) +
+              ')',
+            '(SELECT email, first_name AS firstName, last_name AS lastName FROM "User" WHERE "User".companyId = 5 ORDER BY last_name ASC' +
+              sql.addLimitAndOffset({ limit: 3, order: ['last_name', 'ASC'] }) +
+              ')'
+          ].join(current.dialect.supports['UNION ALL'] ? ' UNION ALL ' : ' UNION ') +
+          ') "User";'
       }
     );
 
@@ -126,7 +139,20 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
             })}) AS sub`
           ].join(
             current.dialect.supports['UNION ALL'] ? ' UNION ALL ' : ' UNION '
-          )}) AS [user] ORDER BY [subquery_order_0] ASC;`
+          )}) AS [user] ORDER BY [subquery_order_0] ASC;`,
+          oracle:
+            'SELECT "user".* FROM (' +
+            [
+              '(SELECT "user".id_user AS id, "user".last_name AS subquery_order_0, project_users.user_id AS "project_users.userId", project_users.project_id AS "project_users.projectId" FROM users "user" INNER JOIN project_users project_users ON "user".id_user = project_users.user_id AND project_users.project_id = 1 ORDER BY subquery_order_0 ASC' +
+                (current.dialect.name === 'oracle' ? ', "user".id_user' : '') +
+                sql.addLimitAndOffset({ limit: 3, order: ['last_name', 'ASC'] }) +
+                ')',
+              '(SELECT "user".id_user AS id, "user".last_name AS subquery_order_0, project_users.user_id AS "project_users.userId", project_users.project_id AS "project_users.projectId" FROM users "user" INNER JOIN project_users project_users ON "user".id_user = project_users.user_id AND project_users.project_id = 5 ORDER BY subquery_order_0 ASC' +
+                (current.dialect.name === 'oracle' ? ', "user".id_user' : '') +
+                sql.addLimitAndOffset({ limit: 3, order: ['last_name', 'ASC'] }) +
+                ')'
+            ].join(current.dialect.supports['UNION ALL'] ? ' UNION ALL ' : ' UNION ') +
+            ') "user" ORDER BY subquery_order_0 ASC;'
         }
       );
 
@@ -200,7 +226,20 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
             })}) AS sub`
           ].join(
             current.dialect.supports['UNION ALL'] ? ' UNION ALL ' : ' UNION '
-          )}) AS [user] ORDER BY [subquery_order_0] ASC;`
+          )}) AS [user] ORDER BY [subquery_order_0] ASC;`,
+          oracle:
+            'SELECT "user".* FROM (' +
+            [
+              '(SELECT "user".id_user AS id, "user".last_name AS subquery_order_0, project_users.user_id AS "project_users.userId", project_users.project_id AS "project_users.projectId" FROM users "user" INNER JOIN project_users project_users ON "user".id_user = project_users.user_id AND project_users.project_id = 1 AND project_users.status = 1 ORDER BY subquery_order_0 ASC' +
+                (current.dialect.name === 'oracle' ? ', "user".id_user' : '') +
+                sql.addLimitAndOffset({ limit: 3, order: ['last_name', 'ASC'] }) +
+                ')',
+              '(SELECT "user".id_user AS id, "user".last_name AS subquery_order_0, project_users.user_id AS "project_users.userId", project_users.project_id AS "project_users.projectId" FROM users "user" INNER JOIN project_users project_users ON "user".id_user = project_users.user_id AND project_users.project_id = 5 AND project_users.status = 1 ORDER BY subquery_order_0 ASC' +
+                (current.dialect.name === 'oracle' ? ', "user".id_user' : '') +
+                sql.addLimitAndOffset({ limit: 3, order: ['last_name', 'ASC'] }) +
+                ')'
+            ].join(current.dialect.supports['UNION ALL'] ? ' UNION ALL ' : ' UNION ') +
+            ') "user" ORDER BY subquery_order_0 ASC;'
         }
       );
     })();
@@ -297,7 +336,18 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
             )}) AS sub`
           ].join(
             current.dialect.supports['UNION ALL'] ? ' UNION ALL ' : ' UNION '
-          )}) AS [user] LEFT OUTER JOIN [post] AS [POSTS] ON [user].[id] = [POSTS].[user_id];`
+          )}) AS [user] LEFT OUTER JOIN [post] AS [POSTS] ON [user].[id] = [POSTS].[user_id];`,
+          oracle:
+            'SELECT "user".*, POSTS.id AS "POSTS.id", POSTS.title AS "POSTS.title" FROM (' +
+            [
+              '(SELECT id_user AS id, email, first_name AS firstName, last_name AS lastName FROM users "user" WHERE "user".companyId = 1 ORDER BY "user".last_name ASC' +
+                sql.addLimitAndOffset({ limit: 3, order: ['last_name', 'ASC'] }) +
+                ')',
+              '(SELECT id_user AS id, email, first_name AS firstName, last_name AS lastName FROM users "user" WHERE "user".companyId = 5 ORDER BY "user".last_name ASC' +
+                sql.addLimitAndOffset({ limit: 3, order: ['last_name', 'ASC'] }) +
+                ')'
+            ].join(current.dialect.supports['UNION ALL'] ? ' UNION ALL ' : ' UNION ') +
+            ') "user" LEFT OUTER JOIN post POSTS ON "user".id = POSTS.user_id;'
         }
       );
 
@@ -328,7 +378,12 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
             limit: 30,
             offset: 10,
             order: [['`user`.`last_name`', 'ASC']]
-          })}) AS [user] LEFT OUTER JOIN [post] AS [POSTS] ON [user].[id_user] = [POSTS].[user_id] ORDER BY [user].[last_name] ASC;`
+          })}) AS [user] LEFT OUTER JOIN [post] AS [POSTS] ON [user].[id_user] = [POSTS].[user_id] ORDER BY [user].[last_name] ASC;`,
+          oracle:
+            'SELECT "user".*, POSTS.id AS "POSTS.id", POSTS.title AS "POSTS.title" FROM (' +
+            'SELECT "user".id_user AS id, "user".email, "user".first_name AS firstName, "user".last_name AS lastName FROM users "user" ORDER BY "user".last_name ASC' +
+            sql.addLimitAndOffset({ limit: 30, offset: 10, order: [['user.last_name', 'ASC']] }) +
+            ') "user" LEFT OUTER JOIN post POSTS ON "user".id_user = POSTS.user_id ORDER BY "user".last_name ASC;'
         }
       );
 
@@ -371,7 +426,18 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
             )}) AS sub`
           ].join(
             current.dialect.supports['UNION ALL'] ? ' UNION ALL ' : ' UNION '
-          )}) AS [user] LEFT OUTER JOIN [post] AS [POSTS] ON [user].[id] = [POSTS].[user_id] LEFT OUTER JOIN [comment] AS [POSTS->COMMENTS] ON [POSTS].[id] = [POSTS->COMMENTS].[post_id];`
+          )}) AS [user] LEFT OUTER JOIN [post] AS [POSTS] ON [user].[id] = [POSTS].[user_id] LEFT OUTER JOIN [comment] AS [POSTS->COMMENTS] ON [POSTS].[id] = [POSTS->COMMENTS].[post_id];`,
+          oracle:
+            'SELECT "user".*, POSTS.id AS "POSTS.id", POSTS.title AS "POSTS.title", "POSTS->COMMENTS".id AS "POSTS.COMMENTS.id", "POSTS->COMMENTS".title AS "POSTS.COMMENTS.title" FROM (' +
+            [
+              '(SELECT id_user AS id, email, first_name AS firstName, last_name AS lastName FROM users "user" WHERE "user".companyId = 1 ORDER BY "user".last_name ASC' +
+                sql.addLimitAndOffset({ limit: 3, order: ['last_name', 'ASC'] }) +
+                ')',
+              '(SELECT id_user AS id, email, first_name AS firstName, last_name AS lastName FROM users "user" WHERE "user".companyId = 5 ORDER BY "user".last_name ASC' +
+                sql.addLimitAndOffset({ limit: 3, order: ['last_name', 'ASC'] }) +
+                ')'
+            ].join(current.dialect.supports['UNION ALL'] ? ' UNION ALL ' : ' UNION ') +
+            ') "user" LEFT OUTER JOIN post POSTS ON "user".id = POSTS.user_id LEFT OUTER JOIN "comment" "POSTS->COMMENTS" ON POSTS.id = "POSTS->COMMENTS".post_id;'
         }
       );
     })();
@@ -529,7 +595,9 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           } OUTER JOIN ( [project_users] AS [projects->project_user] INNER JOIN [projects] AS [projects] ON [projects].[id] = [projects->project_user].[project_id]) ON [user].[id_user] = [projects->project_user].[user_id];`,
           sqlite: `SELECT \`user\`.\`id_user\`, \`user\`.\`id\`, \`projects\`.\`id\` AS \`projects.id\`, \`projects\`.\`title\` AS \`projects.title\`, \`projects\`.\`createdAt\` AS \`projects.createdAt\`, \`projects\`.\`updatedAt\` AS \`projects.updatedAt\`, \`projects->project_user\`.\`user_id\` AS \`projects.project_user.userId\`, \`projects->project_user\`.\`project_id\` AS \`projects.project_user.projectId\` FROM \`User\` AS \`user\` ${
             current.dialect.supports['RIGHT JOIN'] ? 'RIGHT' : 'LEFT'
-          } OUTER JOIN \`project_users\` AS \`projects->project_user\` ON \`user\`.\`id_user\` = \`projects->project_user\`.\`user_id\` LEFT OUTER JOIN \`projects\` AS \`projects\` ON \`projects\`.\`id\` = \`projects->project_user\`.\`project_id\`;`
+          } OUTER JOIN \`project_users\` AS \`projects->project_user\` ON \`user\`.\`id_user\` = \`projects->project_user\`.\`user_id\` LEFT OUTER JOIN \`projects\` AS \`projects\` ON \`projects\`.\`id\` = \`projects->project_user\`.\`project_id\`;`,
+          oracle:
+            'SELECT "User".name, "User".age, Posts.id AS "Posts.id", Posts.title AS "Posts.title" FROM "User" "User" LEFT OUTER JOIN Post Posts ON "User".id = Posts.user_id;'
         }
       );
     });
@@ -666,7 +734,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           }),
           {
             default: "SELECT [a', * FROM User; DELETE FROM User;SELECT id] FROM [User];",
-            mssql: 'SELECT [a, * FROM User; DELETE FROM User;SELECT id] FROM [User];'
+            mssql: 'SELECT [a, * FROM User; DELETE FROM User;SELECT id] FROM [User];',
+            oracle: 'SELECT a, * FROM "User" ; DELETE FROM "User";SELECT id FROM "User" ;'
           }
         );
       });
@@ -695,7 +764,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
             ]
           }),
           {
-            default: 'SELECT [* FROM User; DELETE FROM User;SELECT id] AS [myCol] FROM [User];'
+            default: 'SELECT [* FROM User; DELETE FROM User;SELECT id] AS [myCol] FROM [User];',
+            oracle: 'SELECT name, age, data FROM "User" "User" WHERE "User".data IN (hextoraw(\'313233\'));'
           }
         );
       });
@@ -853,7 +923,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
         }),
         {
           default: 'SELECT [name], [age] FROM [User];',
-          postgres: 'SELECT name, age FROM "User";'
+          postgres: 'SELECT name, age FROM "User";',
+          oracle: 'SELECT name, age FROM "User";'
         }
       );
     });
@@ -903,7 +974,9 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           default:
             'SELECT [User].[name], [User].[age], [Posts].[id] AS [Posts.id], [Posts].[title] AS [Posts.title] FROM [User] AS [User] LEFT OUTER JOIN [Post] AS [Posts] ON [User].[id] = [Posts].[user_id];',
           postgres:
-            'SELECT "User".name, "User".age, Posts.id AS "Posts.id", Posts.title AS "Posts.title" FROM "User" AS "User" LEFT OUTER JOIN Post AS Posts ON "User".id = Posts.user_id;'
+            'SELECT "User".name, "User".age, Posts.id AS "Posts.id", Posts.title AS "Posts.title" FROM "User" AS "User" LEFT OUTER JOIN Post AS Posts ON "User".id = Posts.user_id;',
+          oracle:
+            'SELECT "User".name, "User".age, Posts.id AS "Posts.id", Posts.title AS "Posts.title" FROM "User" "User" LEFT OUTER JOIN Post Posts ON "User".id = Posts.user_id;'
         }
       );
     });
@@ -968,7 +1041,9 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           default:
             'SELECT [User].[name], [User].[age], [Posts].[id] AS [Posts.id], [Posts].[title] AS [Posts.title], [Posts->Comments].[id] AS [Posts.Comments.id], [Posts->Comments].[title] AS [Posts.Comments.title], [Posts->Comments].[createdAt] AS [Posts.Comments.createdAt], [Posts->Comments].[updatedAt] AS [Posts.Comments.updatedAt], [Posts->Comments].[post_id] AS [Posts.Comments.post_id] FROM [User] AS [User] LEFT OUTER JOIN [Post] AS [Posts] ON [User].[id] = [Posts].[user_id] LEFT OUTER JOIN [Comment] AS [Posts->Comments] ON [Posts].[id] = [Posts->Comments].[post_id];',
           postgres:
-            'SELECT "User".name, "User".age, Posts.id AS "Posts.id", Posts.title AS "Posts.title", "Posts->Comments".id AS "Posts.Comments.id", "Posts->Comments".title AS "Posts.Comments.title", "Posts->Comments".createdAt AS "Posts.Comments.createdAt", "Posts->Comments".updatedAt AS "Posts.Comments.updatedAt", "Posts->Comments".post_id AS "Posts.Comments.post_id" FROM "User" AS "User" LEFT OUTER JOIN Post AS Posts ON "User".id = Posts.user_id LEFT OUTER JOIN Comment AS "Posts->Comments" ON Posts.id = "Posts->Comments".post_id;'
+            'SELECT "User".name, "User".age, Posts.id AS "Posts.id", Posts.title AS "Posts.title", "Posts->Comments".id AS "Posts.Comments.id", "Posts->Comments".title AS "Posts.Comments.title", "Posts->Comments".createdAt AS "Posts.Comments.createdAt", "Posts->Comments".updatedAt AS "Posts.Comments.updatedAt", "Posts->Comments".post_id AS "Posts.Comments.post_id" FROM "User" AS "User" LEFT OUTER JOIN Post AS Posts ON "User".id = Posts.user_id LEFT OUTER JOIN Comment AS "Posts->Comments" ON Posts.id = "Posts->Comments".post_id;',
+          oracle:
+            'SELECT "User".name, "User".age, Posts.id AS "Posts.id", Posts.title AS "Posts.title", "Posts->Comments".id AS "Posts.Comments.id", "Posts->Comments".title AS "Posts.Comments.title", "Posts->Comments".createdAt AS "Posts.Comments.createdAt", "Posts->Comments".updatedAt AS "Posts.Comments.updatedAt", "Posts->Comments".post_id AS "Posts.Comments.post_id" FROM "User" "User" LEFT OUTER JOIN Post Posts ON "User".id = Posts.user_id LEFT OUTER JOIN "Comment" "Posts->Comments" ON Posts.id = "Posts->Comments".post_id;'
         }
       );
     });

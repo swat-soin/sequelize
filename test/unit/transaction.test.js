@@ -35,7 +35,8 @@ describe('Transaction', () => {
     const expectations = {
       all: ['START TRANSACTION;'],
       sqlite: ['BEGIN DEFERRED TRANSACTION;'],
-      mssql: ['BEGIN TRANSACTION;']
+      mssql: ['BEGIN TRANSACTION;'],
+      oracle: ['BEGIN TRANSACTION']
     };
 
     await current.transaction(async () => {

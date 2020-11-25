@@ -95,25 +95,27 @@ describe(Support.getTestDialectTeaser('HasOne'), () => {
       });
     }
 
-    it("should be able to handle a where object that's a first class citizen.", async function () {
-      const User = this.sequelize.define('UserXYZ', {
-          username: Sequelize.STRING
-        }),
-        Task = this.sequelize.define('TaskXYZ', {
-          title: Sequelize.STRING,
-          status: Sequelize.STRING
-        });
+    if (Support.getTestDialect() !== 'oracle') {
+      it("should be able to handle a where object that's a first class citizen.", async function () {
+        const User = this.sequelize.define('UserXYZ', {
+            username: Sequelize.STRING
+          }),
+          Task = this.sequelize.define('TaskXYZ', {
+            title: Sequelize.STRING,
+            status: Sequelize.STRING
+          });
 
-      User.hasOne(Task);
+        User.hasOne(Task);
 
-      await User.sync({ force: true });
-      await Task.sync({ force: true });
-      const user = await User.create({ username: 'foo' });
-      const task = await Task.create({ title: 'task', status: 'inactive' });
-      await user.setTaskXYZ(task);
-      const task0 = await user.getTaskXYZ({ where: { status: 'active' } });
-      expect(task0).to.be.null;
-    });
+        await User.sync({ force: true });
+        await Task.sync({ force: true });
+        const user = await User.create({ username: 'foo' });
+        const task = await Task.create({ title: 'task', status: 'inactive' });
+        await user.setTaskXYZ(task);
+        const task0 = await user.getTaskXYZ({ where: { status: 'active' } });
+        expect(task0).to.be.null;
+      });
+    }
 
     it('supports schemas', async function () {
       const User = this.sequelize.define('User', { username: Support.Sequelize.STRING }).schema('admin'),
@@ -474,7 +476,7 @@ describe(Support.getTestDialectTeaser('HasOne'), () => {
     });
 
     // NOTE: mssql does not support changing an autoincrement primary key
-    if (Support.getTestDialect() !== 'mssql') {
+    if (Support.getTestDialect() !== 'mssql' && Support.getTestDialect() !== 'oracle') {
       it('can cascade updates', async function () {
         const Task = this.sequelize.define('Task', { title: Sequelize.STRING }),
           User = this.sequelize.define('User', { username: Sequelize.STRING });

@@ -197,10 +197,15 @@ describe(Support.getTestDialectTeaser('Model'), () => {
       }
 
       it('should be able to find a row between a certain date using the between shortcut', async function () {
+        let betweenDte = ['2013-01-02', '2013-01-11'];
+        if (dialect === 'oracle') {
+          //Specific where we have to use the TO_DATE as in Oracle, the date format is related to the current language settings
+          betweenDte = ["TO_DATE('2013-01-02','YYYY-MM-DD')", "TO_DATE('2013-01-11','YYYY-MM-DD')"];
+        }
         const users = await this.User.findAll({
           where: {
             theDate: {
-              [Op.between]: ['2013-01-02', '2013-01-11']
+              [Op.between]: betweenDte
             }
           }
         });
@@ -314,10 +319,15 @@ describe(Support.getTestDialectTeaser('Model'), () => {
       });
 
       it('should be able to find a row between a certain date', async function () {
+        let betweenDte = ['2013-01-02', '2013-01-11'];
+        if (dialect === 'oracle') {
+          //Specific where we have to use the TO_DATE as in Oracle, the date format is related to the current language settings
+          betweenDte = ["TO_DATE('2013-01-02','YYYY-MM-DD')", "TO_DATE('2013-01-11','YYYY-MM-DD')"];
+        }
         const users = await this.User.findAll({
           where: {
             theDate: {
-              [Op.between]: ['2013-01-02', '2013-01-11']
+              [Op.between]: betweenDte
             }
           }
         });
@@ -327,10 +337,15 @@ describe(Support.getTestDialectTeaser('Model'), () => {
       });
 
       it('should be able to find a row between a certain date and an additional where clause', async function () {
+        let betweenDte = ['2013-01-02', '2013-01-11'];
+        if (dialect === 'oracle') {
+          //Specific where we have to use the TO_DATE as in Oracle, the date format is related to the current language settings
+          betweenDte = ["TO_DATE('2013-01-02','YYYY-MM-DD')", "TO_DATE('2013-01-11','YYYY-MM-DD')"];
+        }
         const users = await this.User.findAll({
           where: {
             theDate: {
-              [Op.between]: ['2013-01-02', '2013-01-11']
+              [Op.between]: betweenDte
             },
             intVal: 10
           }
@@ -354,11 +369,18 @@ describe(Support.getTestDialectTeaser('Model'), () => {
       });
 
       it('should be able to find a row using not between and between logic', async function () {
+        let betweenDte = ['2012-12-10', '2013-01-02'];
+        let notBetweenDte = ['2013-01-04', '2013-01-20'];
+        if (dialect === 'oracle') {
+          //Specific where we have to use the TO_DATE as in Oracle, the date format is related to the current language settings
+          betweenDte = ["TO_DATE('2012-12-10','YYYY-MM-DD')", "TO_DATE('2013-01-02','YYYY-MM-DD')"];
+          notBetweenDte = ["TO_DATE('2013-01-04','YYYY-MM-DD')", "TO_DATE('2013-01-20','YYYY-MM-DD')"];
+        }
         const users = await this.User.findAll({
           where: {
             theDate: {
-              [Op.between]: ['2012-12-10', '2013-01-02'],
-              [Op.notBetween]: ['2013-01-04', '2013-01-20']
+              [Op.between]: betweenDte,
+              [Op.notBetween]: notBetweenDte
             }
           }
         });
@@ -1518,7 +1540,11 @@ describe(Support.getTestDialectTeaser('Model'), () => {
       it('sorts the results via id in ascending order', async function () {
         const users = await this.User.findAll();
         expect(users.length).to.equal(2);
-        expect(users[0].id).to.be.below(users[1].id);
+        //Oracle - no order by is setted, as for mssql, so how can it be ordered ?
+        //
+        if (dialect !== 'oracle') {
+          expect(users[0].id).to.be.below(users[1].id);
+        }
       });
 
       it('sorts the results via id in descending order', async function () {

@@ -14,13 +14,15 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
       expectsql(sql.addIndexQuery('table', ['column1', 'column2'], {}, 'table'), {
         default: 'CREATE INDEX [table_column1_column2] ON [table] ([column1], [column2])',
         mariadb: 'ALTER TABLE `table` ADD INDEX `table_column1_column2` (`column1`, `column2`)',
-        mysql: 'ALTER TABLE `table` ADD INDEX `table_column1_column2` (`column1`, `column2`)'
+        mysql: 'ALTER TABLE `table` ADD INDEX `table_column1_column2` (`column1`, `column2`)',
+        oracle: 'CREATE INDEX table_column1_column2 ON "table" (column1, column2)'
       });
 
       if (current.dialect.supports.schemas) {
         expectsql(sql.addIndexQuery('schema.table', ['column1', 'column2'], {}), {
           default: 'CREATE INDEX [schema_table_column1_column2] ON [schema].[table] ([column1], [column2])',
-          mariadb: 'ALTER TABLE `schema`.`table` ADD INDEX `schema_table_column1_column2` (`column1`, `column2`)'
+          mariadb: 'ALTER TABLE `schema`.`table` ADD INDEX `schema_table_column1_column2` (`column1`, `column2`)',
+          oracle: 'ALTER TABLE "schema"."table" ADD INDEX schema_table_column1_column2 (column1, column2)'
         });
 
         expectsql(
@@ -35,7 +37,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           ),
           {
             default: 'CREATE INDEX [schema_table_column1_column2] ON [schema].[table] ([column1], [column2])',
-            mariadb: 'ALTER TABLE `schema`.`table` ADD INDEX `schema_table_column1_column2` (`column1`, `column2`)'
+            mariadb: 'ALTER TABLE `schema`.`table` ADD INDEX `schema_table_column1_column2` (`column1`, `column2`)',
+            oracle: 'ALTER TABLE "schema"."table" ADD INDEX schema_table_column1_column2 (column1, column2)'
           }
         );
 
@@ -52,7 +55,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           ),
           {
             default: 'CREATE INDEX [schema_table_column1_column2] ON [schema].[table] ([column1], [column2])',
-            mariadb: 'ALTER TABLE `schema`.`table` ADD INDEX `schema_table_column1_column2` (`column1`, `column2`)'
+            mariadb: 'ALTER TABLE `schema`.`table` ADD INDEX `schema_table_column1_column2` (`column1`, `column2`)',
+            oracle: 'ALTER TABLE "schema"."table" ADD INDEX schema_table_column1_column2 (column1, column2)'
           }
         );
       }
@@ -69,7 +73,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           mssql: 'CREATE FULLTEXT INDEX [user_field_c] ON [User] ([fieldC])',
           postgres: 'CREATE INDEX CONCURRENTLY "user_field_c" ON "User" ("fieldC")',
           mariadb: 'ALTER TABLE `User` ADD FULLTEXT INDEX `user_field_c` (`fieldC`)',
-          mysql: 'ALTER TABLE `User` ADD FULLTEXT INDEX `user_field_c` (`fieldC`)'
+          mysql: 'ALTER TABLE `User` ADD FULLTEXT INDEX `user_field_c` (`fieldC`)',
+          oracle: 'ALTER TABLE "User" ADD FULLTEXT INDEX user_field_c (fieldC)'
         }
       );
 
@@ -328,6 +333,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
         mariadb: 'DROP INDEX `table_column1_column2` ON `table`',
         mysql: 'DROP INDEX `table_column1_column2` ON `table`',
         mssql: 'DROP INDEX [table_column1_column2] ON [table]',
+        oracle: 'DROP INDEX table_column1_column2',
         default: 'DROP INDEX IF EXISTS [table_column1_column2]'
       });
     });

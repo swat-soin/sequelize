@@ -20,5 +20,7 @@ test/binary/tmp/*
 site
 .vscode/
 esdoc
+.history
+package-lock.json
 node_modules
 lib

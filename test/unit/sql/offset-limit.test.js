@@ -25,6 +25,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
       },
       {
         default: ' LIMIT 10',
+        oracle: ' ORDER BY tableRef.id OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY',
         mssql: ' ORDER BY [tableRef].[id] OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY'
       }
     );
@@ -38,6 +39,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
       },
       {
         default: ' LIMIT 10',
+        oracle: ' OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY',
         mssql: ' OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY'
       }
     );
@@ -53,6 +55,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
       {
         default: ' LIMIT 20, 10',
         postgres: ' LIMIT 10 OFFSET 20',
+        oracle: ' OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY',
         mssql: ' OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY'
       }
     );
@@ -68,6 +71,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
         default: " LIMIT ''';DELETE FROM user'",
         mariadb: " LIMIT '\\';DELETE FROM user'",
         mysql: " LIMIT '\\';DELETE FROM user'",
+        oracle: " OFFSET 0 ROWS FETCH NEXT ''';DELETE FROM user' ROWS ONLY",
         mssql: " OFFSET 0 ROWS FETCH NEXT N''';DELETE FROM user' ROWS ONLY"
       }
     );
@@ -85,6 +89,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
         postgres: " LIMIT 10 OFFSET ''';DELETE FROM user'",
         mariadb: " LIMIT '\\';DELETE FROM user', 10",
         mysql: " LIMIT '\\';DELETE FROM user', 10",
+        oracle: " OFFSET ''';DELETE FROM user' ROWS FETCH NEXT 10 ROWS ONLY",
         mssql: " OFFSET N''';DELETE FROM user' ROWS FETCH NEXT 10 ROWS ONLY"
       }
     );
@@ -97,6 +102,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
       },
       {
         default: ' LIMIT 10',
+        oracle: ' ORDER BY tableRef.id OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY',
         mssql: ' ORDER BY [tableRef].[id] OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY'
       }
     );

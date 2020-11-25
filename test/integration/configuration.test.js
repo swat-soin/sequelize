@@ -58,6 +58,9 @@ describe(Support.getTestDialectTeaser('Configuration'), () => {
         // SQLite doesn't require authentication and `select 1 as hello` is a valid query, so this should be fulfilled not rejected for it.
         await expect(seq.query('select 1 as hello')).to.eventually.be.fulfilled;
       } else {
+        if (dialect === 'oracle') {
+          await expect(seq.query('select 1 as hello')).to.eventually.be.rejectedWith(seq.ConnectionAccessDeniedError);
+        }
         await expect(seq.query('select 1 as hello')).to.eventually.be.rejectedWith(
           Sequelize.ConnectionRefusedError,
           'connect ECONNREFUSED'
@@ -74,7 +77,7 @@ describe(Support.getTestDialectTeaser('Configuration'), () => {
         });
       }).to.throw(
         Error,
-        'The dialect some-fancy-dialect is not supported. Supported dialects: mssql, mariadb, mysql, postgres, and sqlite.'
+        'The dialect some-fancy-dialect is not supported. Supported dialects: mssql, mariadb, mysql, postgres, oracle and sqlite.'
       );
     });
   });

@@ -44,7 +44,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
     testsql(
       { id: 1 },
       {
-        default: 'WHERE [id] = 1'
+        default: 'WHERE [id] = 1',
+        oracle: 'WHERE id = 1'
       }
     );
     testsql(
@@ -78,7 +79,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
       { id: 1 },
       { prefix: 'User' },
       {
-        default: 'WHERE [User].[id] = 1'
+        default: 'WHERE [User].[id] = 1',
+        oracle: 'WHERE "User".id = 1'
       }
     );
 
@@ -99,7 +101,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           default: 'WHERE [yolo.User].[id] = 1',
           postgres: 'WHERE "yolo"."User"."id" = 1',
           mariadb: 'WHERE `yolo`.`User`.`id` = 1',
-          mssql: 'WHERE [yolo].[User].[id] = 1'
+          mssql: 'WHERE [yolo].[User].[id] = 1',
+          oracle: 'WHERE yolo."User".id = 1'
         }
       );
     });
@@ -111,6 +114,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
       },
       {
         default: "WHERE ([id] IN (1, 2, 3) OR [id] > 10) AND [name] = 'a project'",
+        oracle: "WHERE name = 'a project' AND (id IN (1, 2, 3) OR id > 10)",
         mssql: "WHERE ([id] IN (1, 2, 3) OR [id] > 10) AND [name] = N'a project'"
       }
     );
@@ -135,7 +139,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
       {
         default: "WHERE [name] = 'here is a null char: \\0'",
         mssql: "WHERE [name] = N'here is a null char: \0'",
-        sqlite: "WHERE `name` = 'here is a null char: \0'"
+        sqlite: "WHERE `name` = 'here is a null char: \0'",
+        oracle: "WHERE name = 'here is a null char: \0'"
       }
     );
   });
@@ -160,6 +165,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
 
     testsql('deleted', null, {
       default: '`deleted` IS NULL',
+      oracle: 'deleted IS NULL',
       postgres: '"deleted" IS NULL',
       mssql: '[deleted] IS NULL'
     });
@@ -171,7 +177,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           [Op.in]: [1, 3]
         },
         {
-          default: '[equipment] IN (1, 3)'
+          default: '[equipment] IN (1, 3)',
+          oracle: 'equipment IN (1, 3)'
         }
       );
 
@@ -181,7 +188,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           [Op.in]: []
         },
         {
-          default: '[equipment] IN (NULL)'
+          default: '[equipment] IN (NULL)',
+          oracle: 'equipment IN (NULL)'
         }
       );
 
@@ -191,7 +199,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           [Op.in]: [2, 4]
         },
         {
-          default: '[muscles] IN (2, 4)'
+          default: '[muscles] IN (2, 4)',
+          oracle: 'muscles IN (2, 4)'
         }
       );
 
@@ -201,7 +210,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           [Op.in]: current.literal('(select order_id from product_orders where product_id = 3)')
         },
         {
-          default: '[equipment] IN (select order_id from product_orders where product_id = 3)'
+          default: '[equipment] IN (select order_id from product_orders where product_id = 3)',
+          oreacle: 'equipment IN (select order_id from product_orders where product_id = 3)'
         }
       );
     });
@@ -209,6 +219,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
     describe('Buffer', () => {
       testsql('field', Buffer.from('Sequelize'), {
         postgres: '"field" = E\'\\\\x53657175656c697a65\'',
+        oracle: "field = hextoraw('53657175656c697a65')",
         sqlite: "`field` = X'53657175656c697a65'",
         mariadb: "`field` = X'53657175656c697a65'",
         mysql: "`field` = X'53657175656c697a65'",
@@ -225,7 +236,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
         {
           default: '[deleted] IS NOT true',
           mssql: '[deleted] IS NOT 1',
-          sqlite: '`deleted` IS NOT 1'
+          sqlite: '`deleted` IS NOT 1',
+          oracle: 'equipment != true'
         }
       );
 
@@ -235,7 +247,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           [Op.not]: null
         },
         {
-          default: '[deleted] IS NOT NULL'
+          default: '[deleted] IS NOT NULL',
+          oracle: 'deleted IS NOT NULL'
         }
       );
 
@@ -245,7 +258,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           [Op.not]: 3
         },
         {
-          default: '[muscles] != 3'
+          default: '[muscles] != 3',
+          oracle: 'muscles != 3'
         }
       );
     });
@@ -267,7 +281,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           [Op.notIn]: [4, 19]
         },
         {
-          default: '[equipment] NOT IN (4, 19)'
+          default: '[equipment] NOT IN (4, 19)',
+          oracle: 'equipment NOT IN (4, 19)'
         }
       );
 
@@ -277,7 +292,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           [Op.notIn]: current.literal('(select order_id from product_orders where product_id = 3)')
         },
         {
-          default: '[equipment] NOT IN (select order_id from product_orders where product_id = 3)'
+          default: '[equipment] NOT IN (select order_id from product_orders where product_id = 3)',
+          oracle: 'equipment NOT IN (select order_id from product_orders where product_id = 3)'
         }
       );
     });
@@ -290,7 +306,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
         },
         {
           default: "[email] != 'jack.bauer@gmail.com'",
-          mssql: "[email] != N'jack.bauer@gmail.com'"
+          mssql: "[email] != N'jack.bauer@gmail.com'",
+          oracle: "email != 'jack.bauer@gmail.com'"
         }
       );
     });
@@ -304,7 +321,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           },
           {
             default: "([email] = 'maker@mhansen.io' OR [email] = 'janzeh@gmail.com')",
-            mssql: "([email] = N'maker@mhansen.io' OR [email] = N'janzeh@gmail.com')"
+            mssql: "([email] = N'maker@mhansen.io' OR [email] = N'janzeh@gmail.com')",
+            oracle: "(email = 'maker@mhansen.io' OR email = 'janzeh@gmail.com')"
           }
         );
 
@@ -317,12 +335,14 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
             }
           },
           {
-            default: '([rank] < 100 OR [rank] IS NULL)'
+            default: '([rank] < 100 OR [rank] IS NULL)',
+            oracle: '(rank < 100 OR rank IS NULL)'
           }
         );
 
         testsql(Op.or, [{ email: 'maker@mhansen.io' }, { email: 'janzeh@gmail.com' }], {
           default: "([email] = 'maker@mhansen.io' OR [email] = 'janzeh@gmail.com')",
+          oracle: "(email = 'maker@mhansen.io' OR email = 'janzeh@gmail.com')",
           mssql: "([email] = N'maker@mhansen.io' OR [email] = N'janzeh@gmail.com')"
         });
 
@@ -334,6 +354,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           },
           {
             default: "([email] = 'maker@mhansen.io' OR [name] = 'Mick Hansen')",
+            oracle: "(email = 'maker@mhansen.io' OR name = 'Mick Hansen')",
             mssql: "([email] = N'maker@mhansen.io' OR [name] = N'Mick Hansen')"
           }
         );
@@ -347,7 +368,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
             }
           },
           {
-            default: '([equipment] IN (1, 3) OR [muscles] IN (2, 4))'
+            default: '([equipment] IN (1, 3) OR [muscles] IN (2, 4))',
+            oracle: '(equipment IN (1, 3) OR muscles IN (2, 4))'
           }
         );
 
@@ -364,19 +386,22 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           ],
           {
             default: "([roleName] = 'NEW' OR ([roleName] = 'CLIENT' AND [type] = 'CLIENT'))",
+            oracle: "(roleName = 'NEW' OR (roleName = 'CLIENT' AND type = 'CLIENT'))",
             mssql: "([roleName] = N'NEW' OR ([roleName] = N'CLIENT' AND [type] = N'CLIENT'))"
           }
         );
 
         it('sequelize.or({group_id: 1}, {user_id: 2})', function () {
           expectsql(sql.whereItemQuery(undefined, this.sequelize.or({ group_id: 1 }, { user_id: 2 })), {
-            default: '([group_id] = 1 OR [user_id] = 2)'
+            default: '([group_id] = 1 OR [user_id] = 2)',
+            oracle: '(group_id = 1 OR user_id = 2)'
           });
         });
 
         it("sequelize.or({group_id: 1}, {user_id: 2, role: 'admin'})", function () {
           expectsql(sql.whereItemQuery(undefined, this.sequelize.or({ group_id: 1 }, { user_id: 2, role: 'admin' })), {
             default: "([group_id] = 1 OR ([user_id] = 2 AND [role] = 'admin'))",
+            oracle: '(group_id = 1 OR (user_id = 2 AND "role" = \'admin\'))',
             mssql: "([group_id] = 1 OR ([user_id] = 2 AND [role] = N'admin'))"
           });
         });
@@ -411,7 +436,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
             shared: 1
           },
           {
-            default: '(([group_id] = 1 OR [user_id] = 2) AND [shared] = 1)'
+            default: '(([group_id] = 1 OR [user_id] = 2) AND [shared] = 1)',
+            oracle: '((group_id = 1 OR user_id = 2) AND "shared" = 1)'
           }
         );
 
@@ -431,7 +457,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           ],
           {
             default: "([name] LIKE '%hello' AND [name] LIKE 'hello%')",
-            mssql: "([name] LIKE N'%hello' AND [name] LIKE N'hello%')"
+            mssql: "([name] LIKE N'%hello' AND [name] LIKE N'hello%')",
+            oracle: "(name LIKE '%hello' AND name LIKE 'hello%')"
           }
         );
 
@@ -444,7 +471,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
             }
           },
           {
-            default: '([rank] != 15 AND [rank] BETWEEN 10 AND 20)'
+            default: '([rank] != 15 AND [rank] BETWEEN 10 AND 20)',
+            oracle: '(rank != 15 AND rank BETWEEN 10 AND 20)'
           }
         );
 
@@ -455,6 +483,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           },
           {
             default: "([name] LIKE '%someValue1%' AND [name] LIKE '%someValue2%')",
+            oracle: "(name LIKE '%someValue1%' AND name LIKE '%someValue2%')",
             mssql: "([name] LIKE N'%someValue1%' AND [name] LIKE N'%someValue2%')"
           }
         );
@@ -466,7 +495,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
               this.sequelize.and({ shared: 1 }, this.sequelize.or({ group_id: 1 }, { user_id: 2 }))
             ),
             {
-              default: '([shared] = 1 AND ([group_id] = 1 OR [user_id] = 2))'
+              default: '([shared] = 1 AND ([group_id] = 1 OR [user_id] = 2))',
+              oracle: '(shared = 1 AND (group_id = 1 OR group_id = 2))'
             }
           );
         });
@@ -483,7 +513,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
             shared: 1
           },
           {
-            default: 'NOT (([group_id] = 1 OR [user_id] = 2) AND [shared] = 1)'
+            default: 'NOT (([group_id] = 1 OR [user_id] = 2) AND [shared] = 1)',
+            oracle: 'NOT ((group_id = 1 OR user_id = 2) AND "shared" = 1)'
           }
         );
 
@@ -508,7 +539,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           [Op.col]: 'user.id'
         },
         {
-          default: '[userId] = [user].[id]'
+          default: '[userId] = [user].[id]',
+          oracle: 'userId = "user".id'
         }
       );
 
@@ -520,7 +552,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           }
         },
         {
-          default: '[userId] = [user].[id]'
+          default: '[userId] = [user].[id]',
+          oracle: 'userId = "user".id'
         }
       );
 
@@ -532,12 +565,14 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           }
         },
         {
-          default: '[userId] > [user].[id]'
+          default: '[userId] > [user].[id]',
+          oracle: 'userId > "user".id'
         }
       );
 
       testsql(Op.or, [{ ownerId: { [Op.col]: 'user.id' } }, { ownerId: { [Op.col]: 'organization.id' } }], {
-        default: '([ownerId] = [user].[id] OR [ownerId] = [organization].[id])'
+        default: '([ownerId] = [user].[id] OR [ownerId] = [organization].[id])',
+        oracle: '(ownerId = "user".id OR ownerId = organization.id)'
       });
 
       testsql(
@@ -546,7 +581,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           [Op.col]: 'user.organizationId'
         },
         {
-          default: '[organization].[id] = [user].[organizationId]'
+          default: '[organization].[id] = [user].[organizationId]',
+          oracle: 'organization.id = "user".organizationId'
         }
       );
 
@@ -568,7 +604,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           [Op.gt]: 2
         },
         {
-          default: '[rank] > 2'
+          default: '[rank] > 2',
+          oracle: 'rank > 2'
         }
       );
 
@@ -580,7 +617,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
           }
         },
         {
-          default: '[created_at] < [updated_at]'
+          default: '[created_at] < [updated_at]',
+          oracle: 'created_at < updated_at'
         }
       );
     });
@@ -593,6 +631,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
         },
         {
           default: "[username] LIKE '%swagger'",
+          oracle: "username LIKE '%swagger'",
           mssql: "[username] LIKE N'%swagger'"
         }
       );
@@ -606,6 +645,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
         },
         {
           default: "[username] LIKE 'swagger%'",
+          oracle: "username LIKE 'swagger%'",
           mssql: "[username] LIKE N'swagger%'"
         }
       );
@@ -617,6 +657,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
         },
         {
           default: "[username] LIKE 'swagger%'",
+          oracle: "username LIKE 'swagger%'",
           mssql: "[username] LIKE N'swagger%'"
         }
       );
@@ -630,6 +671,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
         },
         {
           default: "[username] LIKE '%swagger'",
+          oracle: "username LIKE '%swagger'",
           mssql: "[username] LIKE N'%swagger'"
         }
       );
@@ -641,6 +683,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
         },
         {
           default: "[username] LIKE '%swagger'",
+          oracle: "username LIKE '%swagger'",
           mssql: "[username] LIKE N'%swagger'"
         }
       );
@@ -654,6 +697,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
         },
         {
           default: "[username] LIKE '%swagger%'",
+          oracle: "username LIKE '%swagger%'",
           mssql: "[username] LIKE N'%swagger%'"
         }
       );
@@ -665,6 +709,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
         },
         {
           default: "[username] LIKE '%swagger%'",
+          oracle: "username LIKE '%swagger%'",
           mssql: "[username] LIKE N'%swagger%'"
         }
       );
@@ -678,6 +723,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
         },
         {
           default: "[date] BETWEEN '2013-01-01' AND '2013-01-11'",
+          oracle: "date BETWEEN to_date('2013-01-01','YYYY-MM-DD') AND to_date('2013-01-11','YYYY-MM-DD')",
           mssql: "[date] BETWEEN N'2013-01-01' AND N'2013-01-11'"
         }
       );
@@ -690,6 +736,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
         {
           default: "[date] BETWEEN '2013-01-01 00:00:00.000 +00:00' AND '2013-01-11 00:00:00.000 +00:00'",
           mysql: "`date` BETWEEN '2013-01-01 00:00:00' AND '2013-01-11 00:00:00'",
+          oracle:
+            "date BETWEEN to_date('2013-01-01 00:00:00','YYYY-MM-DD HH:MI:SS') AND to_date('2013-01-11 00:00:00','YYYY-MM-DD HH:MI:SS')",
           mariadb: "`date` BETWEEN '2013-01-01 00:00:00.000' AND '2013-01-11 00:00:00.000'"
         }
       );
@@ -1711,6 +1759,7 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
       it("{name: this.sequelize.fn('LOWER', 'DERP')}", function () {
         expectsql(sql.whereQuery({ name: this.sequelize.fn('LOWER', 'DERP') }), {
           default: "WHERE [name] = LOWER('DERP')",
+          oracle: "WHERE name = LOWER('DERP')",
           mssql: "WHERE [name] = LOWER(N'DERP')"
         });
       });
@@ -1727,7 +1776,8 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
     };
 
     testsql(current.where(current.fn('lower', current.col('name')), null), {
-      default: 'lower([name]) IS NULL'
+      default: 'lower([name]) IS NULL',
+      oracle: 'lower(name) IS NULL'
     });
 
     testsql(current.where(current.fn('SUM', current.col('hours')), '>', 0), {

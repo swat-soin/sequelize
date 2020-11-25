@@ -20,7 +20,8 @@ if (current.dialect.supports.constraints.addConstraint) {
               fields: ['myColumn']
             }),
             {
-              default: 'ALTER TABLE [myTable] ADD CONSTRAINT [unique_mytable_mycolumn] UNIQUE ([myColumn]);'
+              default: 'ALTER TABLE [myTable] ADD CONSTRAINT [unique_mytable_mycolumn] UNIQUE ([myColumn]);',
+              oracle: 'ALTER TABLE myTable ADD CONSTRAINT unique_mytable_mycolumn UNIQUE (myColumn)'
             }
           );
         });
@@ -32,7 +33,8 @@ if (current.dialect.supports.constraints.addConstraint) {
               fields: ['myColumn']
             }),
             {
-              default: 'ALTER TABLE [myTable] ADD CONSTRAINT [myTable_myColumn_uk] UNIQUE ([myColumn]);'
+              default: 'ALTER TABLE [myTable] ADD CONSTRAINT [myTable_myColumn_uk] UNIQUE ([myColumn]);',
+              oracle: 'ALTER TABLE myTable ADD CONSTRAINT myTable_myColumn_uk UNIQUE (myColumn)'
             }
           );
         });
@@ -45,7 +47,8 @@ if (current.dialect.supports.constraints.addConstraint) {
             }),
             {
               default:
-                'ALTER TABLE [myTable] ADD CONSTRAINT [myTable_myColumn1_myColumn2_uk] UNIQUE ([myColumn1], [myColumn2]);'
+                'ALTER TABLE [myTable] ADD CONSTRAINT [myTable_myColumn1_myColumn2_uk] UNIQUE ([myColumn1], [myColumn2]);',
+              oracle: 'ALTER TABLE myTable ADD CONSTRAINT myTable_myColumn1_myColumn2_uk UNIQUE (myColumn1, myColumn2)'
             }
           );
         });
@@ -64,6 +67,8 @@ if (current.dialect.supports.constraints.addConstraint) {
             {
               mssql:
                 "ALTER TABLE [myTable] ADD CONSTRAINT [myTable_myColumn_ck] CHECK ([myColumn] IN (N'value1', N'value2', N'value3'));",
+              oracle:
+                "ALTER TABLE myTable ADD CONSTRAINT myTable_myColumn_ck CHECK (myColumn IN ('value1', 'value2', 'value3'))",
               default:
                 "ALTER TABLE [myTable] ADD CONSTRAINT [myTable_myColumn_ck] CHECK ([myColumn] IN ('value1', 'value2', 'value3'));"
             }
@@ -86,6 +91,8 @@ if (current.dialect.supports.constraints.addConstraint) {
               }
             }),
             {
+              oracle:
+                'ALTER TABLE myTable ADD CONSTRAINT check_mycolumn_where CHECK ((myColumn > 50 AND myColumn < 100))',
               default:
                 'ALTER TABLE [myTable] ADD CONSTRAINT [check_mycolumn_where] CHECK (([myColumn] > 50 AND [myColumn] < 100));'
             }
@@ -153,7 +160,8 @@ if (current.dialect.supports.constraints.addConstraint) {
               fields: ['myColumn']
             }),
             {
-              default: 'ALTER TABLE [myTable] ADD CONSTRAINT [primary_mytable_mycolumn] PRIMARY KEY ([myColumn]);'
+              default: 'ALTER TABLE [myTable] ADD CONSTRAINT [primary_mytable_mycolumn] PRIMARY KEY ([myColumn]);',
+              oracle: 'ALTER TABLE myTable ADD CONSTRAINT primary_mytable_mycolumn PRIMARY KEY (myColumn)'
             }
           );
         });
@@ -165,7 +173,8 @@ if (current.dialect.supports.constraints.addConstraint) {
               fields: ['myColumn']
             }),
             {
-              default: 'ALTER TABLE [myTable] ADD CONSTRAINT [myTable_myColumn_pk] PRIMARY KEY ([myColumn]);'
+              default: 'ALTER TABLE [myTable] ADD CONSTRAINT [myTable_myColumn_pk] PRIMARY KEY ([myColumn]);',
+              oracle: 'ALTER TABLE myTable ADD CONSTRAINT myTable_myColumn_pk PRIMARY KEY (myColumn)'
             }
           );
         });
@@ -178,7 +187,9 @@ if (current.dialect.supports.constraints.addConstraint) {
             }),
             {
               default:
-                'ALTER TABLE [myTable] ADD CONSTRAINT [myTable_myColumn1_myColumn2_pk] PRIMARY KEY ([myColumn1], [myColumn2]);'
+                'ALTER TABLE [myTable] ADD CONSTRAINT [myTable_myColumn1_myColumn2_pk] PRIMARY KEY ([myColumn1], [myColumn2]);',
+              oracle:
+                'ALTER TABLE myTable ADD CONSTRAINT myTable_myColumn1_myColumn2_pk PRIMARY KEY (myColumn1, myColumn2)'
             }
           );
         });
@@ -198,7 +209,9 @@ if (current.dialect.supports.constraints.addConstraint) {
             }),
             {
               default:
-                'ALTER TABLE [myTable] ADD CONSTRAINT [foreignkey_mytable_mycolumn] FOREIGN KEY ([myColumn]) REFERENCES [myOtherTable] ([id]);'
+                'ALTER TABLE [myTable] ADD CONSTRAINT [foreignkey_mytable_mycolumn] FOREIGN KEY ([myColumn]) REFERENCES [myOtherTable] ([id]);',
+              oracle:
+                'ALTER TABLE myTable ADD CONSTRAINT foreignkey_mytable_mycolumn FOREIGN KEY (myColumn) REFERENCES myOtherTable (id);'
             }
           );
         });
@@ -217,7 +230,9 @@ if (current.dialect.supports.constraints.addConstraint) {
             }),
             {
               default:
-                'ALTER TABLE [myTable] ADD CONSTRAINT [myTable_myColumn_anotherColumn_myOtherTable_fk] FOREIGN KEY ([myColumn], [anotherColumn]) REFERENCES [myOtherTable] ([id1], [id2]) ON UPDATE CASCADE ON DELETE CASCADE;'
+                'ALTER TABLE [myTable] ADD CONSTRAINT [myTable_myColumn_anotherColumn_myOtherTable_fk] FOREIGN KEY ([myColumn], [anotherColumn]) REFERENCES [myOtherTable] ([id1], [id2]) ON UPDATE CASCADE ON DELETE CASCADE;',
+              oracle:
+                'ALTER TABLE myTable ADD CONSTRAINT myTable_myColumn_anotherColumn_myOtherTable_fk FOREIGN KEY (myColumn, anotherColumn) REFERENCES myOtherTable (id1, id2) ON UPDATE CASCADE ON DELETE CASCADE;'
             }
           );
         });
@@ -236,7 +251,9 @@ if (current.dialect.supports.constraints.addConstraint) {
             }),
             {
               default:
-                'ALTER TABLE [myTable] ADD CONSTRAINT [myTable_myColumn_myOtherTable_fk] FOREIGN KEY ([myColumn]) REFERENCES [myOtherTable] ([id]) ON UPDATE CASCADE ON DELETE CASCADE;'
+                'ALTER TABLE [myTable] ADD CONSTRAINT [myTable_myColumn_myOtherTable_fk] FOREIGN KEY ([myColumn]) REFERENCES [myOtherTable] ([id]) ON UPDATE CASCADE ON DELETE CASCADE;',
+              oracle:
+                'ALTER TABLE myTable ADD CONSTRAINT myTable_myColumn_myOtherTable_fk FOREIGN KEY (myColumn) REFERENCES myOtherTable (id) ON UPDATE CASCADE ON DELETE CASCADE;'
             }
           );
         });

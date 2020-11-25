@@ -6,6 +6,7 @@ services:
     links:
      - mysql-57
      - postgres-95
+     - oracle-12c
     volumes:
       - .:/sequelize
     environment:
@@ -72,6 +73,12 @@ services:
       - "8980:3306"
     container_name: mysql-57
 
+  oracle-12c:
+    image: konnecteam/oracle12c-database-sequelize
+    ports:
+      - "127.0.0.1:1521:1521"
+    container_name: oracle-12c
+    
   # MSSQL
   mssql:
     image: microsoft/mssql-server-linux:latest
