@@ -12,8 +12,8 @@ const uuid = require('uuid');
 //const Op = require('../../operators');
 
 class OracleQueryGenerator extends AbstractQueryGenerator {
-  constructor() {
-    super();
+  constructor(options) {
+    super(options);
     this.oracleReservedWords = [
       'ACCESS',
       'ACCOUNT',
