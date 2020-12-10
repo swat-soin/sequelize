@@ -1,15 +1,14 @@
 'use strict';
 
-const Promise = require('../../promise');
 const AbstractQuery = require('../abstract/query');
-const sequelizeErrors = require('../../errors.js');
+const SequelizeErrors = require('../../errors');
 const parserStore = require('../parserStore')('oracle');
 const _ = require('lodash');
 const semver = require('semver');
 
 class Query extends AbstractQuery {
   constructor(connection, sequelize, options) {
-    super();
+    super(connection, sequelize, options);
     this.connection = connection;
     this.instance = options.instance;
     this.model = options.model;
@@ -782,7 +781,7 @@ class Query extends AbstractQuery {
 
         fields.forEach(field => {
           errors.push(
-            new sequelizeErrors.ValidationErrorItem(
+            new SequelizeErrors.ValidationErrorItem(
               this.getUniqueConstraintErrorMessage(field),
               'unique violation',
               field,
@@ -792,7 +791,7 @@ class Query extends AbstractQuery {
         });
       }
 
-      return new sequelizeErrors.UniqueConstraintError({
+      return new SequelizeErrors.UniqueConstraintError({
         message,
         errors,
         err,
@@ -803,7 +802,7 @@ class Query extends AbstractQuery {
     //ORA-02291: integrity constraint (string.string) violated - parent key not found / ORA-02292: integrity constraint (string.string) violated - child record found
     match = err.message.match(/ORA-02291/) || err.message.match(/ORA-02292/);
     if (match && match.length > 0) {
-      return new sequelizeErrors.ForeignKeyConstraintError({
+      return new SequelizeErrors.ForeignKeyConstraintError({
         fields: null,
         index: match[1],
         parent: err
@@ -813,10 +812,10 @@ class Query extends AbstractQuery {
     // ORA-02443: Cannot drop constraint  - nonexistent constraint
     match = err.message.match(/ORA-02443/);
     if (match && match.length > 0) {
-      return new sequelizeErrors.UnknownConstraintError(match[1]);
+      return new SequelizeErrors.UnknownConstraintError(match[1]);
     }
 
-    return new sequelizeErrors.DatabaseError(err);
+    return new SequelizeErrors.DatabaseError(err);
   }
 
   isShowIndexesQuery() {
@@ -875,7 +874,7 @@ class Query extends AbstractQuery {
         id = null;
 
       if (
-        this.model.rawAttributes.hasOwnProperty(autoIncrementField) &&
+        Object.prototype.hasOwnProperty.call(this.model.rawAttributes, autoIncrementField) &&
         this.model.rawAttributes[autoIncrementField].field !== undefined
       )
         autoIncrementFieldAlias = this.model.rawAttributes[autoIncrementField].field;

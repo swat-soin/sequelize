@@ -1,16 +1,29 @@
 'use strict';
 
 const AbstractConnectionManager = require('../abstract/connection-manager');
-const Promise = require('../../promise');
-const sequelizeErrors = require('../../errors');
+const SequelizeErrors = require('../../errors');
 const parserStore = require('../parserStore')('oracle');
+const { logger } = require('../../utils/logger');
+const debug = logger.debugContext('connection:oracle');
+const DataTypes = require('../../data-types').oracle;
+//const { promisify } = require('util');
 
+/**
+ * Oracle Connection Manager
+ *
+ * Get connections, validate and disconnect them.
+ * AbstractConnectionManager pooling use it to handle Oracle specific connections
+ * Use github.com/oracle/node-oracledb to connect with Oracle server
+ *
+ * @private
+ */
 class ConnectionManager extends AbstractConnectionManager {
   constructor(dialect, sequelize) {
     super(dialect, sequelize);
 
     this.sequelize = sequelize;
     this.sequelize.config.port = this.sequelize.config.port || 1521;
+    this.refreshTypeParser(DataTypes);
     try {
       if (sequelize.config.dialectModulePath) {
         this.lib = require(sequelize.config.dialectModulePath);
@@ -30,7 +43,7 @@ class ConnectionManager extends AbstractConnectionManager {
             this.lib.fetchAsString = [this.lib.CLOB];
           }
         }
-        this.lib.Promise = Promise;
+        //this.lib.Promise = Promise;
       }
     } catch (err) {
       if (err.code === 'MODULE_NOT_FOUND') {
@@ -83,18 +96,29 @@ class ConnectionManager extends AbstractConnectionManager {
     parserStore.clear();
   }
 
-  connect(config) {
-    return new Promise((resolve, reject) => {
-      const connectionConfig = {
-        user: config.username,
-        host: config.host,
-        port: config.port,
-        database: config.database,
-        password: config.password,
-        externalAuth: config.externalAuth,
-        stmtCacheSize: 0
-      };
+  /**
+   * Connect with Oracle database based on config, Handle any errors in connection
+   * Set the pool handlers on connection.error
+   * Also set proper timezone once connection is connected.
+   *
+   * @param {object} config
+   * @returns {Promise<Connection>}
+   * @private
+   */
+  async connect(config) {
+    const connectionConfig = {
+      user: config.username,
+      host: config.host,
+      port: config.port,
+      database: config.database,
+      password: config.password,
+      externalAuth: config.externalAuth,
+      stmtCacheSize: 0,
+      connectString: config.database,
+      ...config.dialectOptions
+    };
 
+    try {
       //Check the config object
       this.checkConfigObject(connectionConfig);
 
@@ -115,46 +139,69 @@ class ConnectionManager extends AbstractConnectionManager {
         });
       }
 
-      return this.lib
-        .getConnection(connectionConfig)
-        .then(connection => {
-          resolve(connection);
-        })
-        .catch(err => {
-          //We split to get the error number; it comes as ORA-XXXXX:
-          let errorCode = err.message.split(':');
-          errorCode = errorCode[0];
+      const connection = await this.lib.getConnection(connectionConfig);
 
-          switch (errorCode) {
-            case 'ORA-28000': //Account locked
-              reject(new sequelizeErrors.ConnectionRefusedError(err));
-            case 'ORA-01017': //ORA-01017 : invalid username/password; logon denied
-              reject(new sequelizeErrors.AccessDeniedError(err));
-            case 'ORA-12154':
-              reject(new sequelizeErrors.HostNotReachableError(err)); //ORA-12154: TNS:could not resolve the connect identifier specified
-            case 'ORA-12514': // ORA-12514: TNS:listener does not currently know of service requested in connect descriptor
-              reject(new sequelizeErrors.HostNotFoundError(err));
-            case 'ORA-12541': //ORA-12541: TNS:No listener
-              reject(new sequelizeErrors.AccessDeniedError(err));
-            default:
-              reject(new sequelizeErrors.ConnectionError(err));
-          }
-        });
-    });
+      debug('connection acquired');
+      connection.on('error', error => {
+        switch (error.code) {
+          case 'ESOCKET':
+          case 'ECONNRESET':
+          case 'EPIPE':
+          case 'PROTOCOL_CONNECTION_LOST':
+            this.pool.destroy(connection);
+        }
+      });
+
+      return connection;
+    } catch (err) {
+      //We split to get the error number; it comes as ORA-XXXXX:
+      let errorCode = err.message.split(':');
+      errorCode = errorCode[0];
+
+      switch (errorCode) {
+        case 'ORA-28000': //Account locked
+          throw new SequelizeErrors.ConnectionRefusedError(err);
+        case 'ORA-01017': //ORA-01017 : invalid username/password; logon denied
+          throw new SequelizeErrors.AccessDeniedError(err);
+        case 'ORA-12154':
+          throw new SequelizeErrors.HostNotReachableError(err); //ORA-12154: TNS:could not resolve the connect identifier specified
+        case 'ORA-12514': // ORA-12514: TNS:listener does not currently know of service requested in connect descriptor
+          throw new SequelizeErrors.HostNotFoundError(err);
+        case 'ORA-12541': //ORA-12541: TNS:No listener
+          throw new SequelizeErrors.AccessDeniedError(err);
+        default:
+          throw new SequelizeErrors.ConnectionError(err);
+      }
+    }
   }
 
-  disconnect(connection) {
+  async disconnect(connection) {
+    if (connection._closing) {
+      debug('connection tried to disconnect but was already at CLOSED state');
+      return;
+    }
+
+    //return await promisify(callback => connection.end(callback))();
     return new Promise((resolve, reject) => {
       return connection
         .close()
         .then(resolve)
         .catch(err => {
-          reject(new sequelizeErrors.ConnectionError(err));
+          reject(new SequelizeErrors.ConnectionError(err));
         });
     });
   }
 
   validate(connection) {
+    /*
+    return (
+      connection &&
+      !connection._fatalError &&
+      !connection._protocolError &&
+      !connection._closing &&
+      !connection.stream.destroyed
+    );
+  }*/
     return connection && ['disconnected', 'protocol_error'].indexOf(connection.state) === -1;
   }
 }
