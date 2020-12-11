@@ -517,7 +517,7 @@ class AbstractQuery {
       let uniqueKeyAttributes = _.chain(model.uniqueKeys);
       uniqueKeyAttributes = uniqueKeyAttributes
         .result(`${uniqueKeyAttributes.findKey()}.fields`)
-        .map(field => _.findKey(model.attributes, chr => chr.field === field))
+        .map(field => _.findKey(model.rawAttributes, chr => chr.field === field))
         .value();
 
       return uniqueKeyAttributes;

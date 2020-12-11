@@ -9,10 +9,6 @@ const semver = require('semver');
 class Query extends AbstractQuery {
   constructor(connection, sequelize, options) {
     super(connection, sequelize, options);
-    this.connection = connection;
-    this.instance = options.instance;
-    this.model = options.model;
-    this.sequelize = sequelize;
     this.options = _.extend(
       {
         logging: console.log,
@@ -581,16 +577,18 @@ class Query extends AbstractQuery {
         }
 
         //We have a model, we will map the properties returned by Oracle to the field names in the model
-        const attrKeys = Object.keys(this.model.attributes);
+        const attrKeys = Object.keys(this.model.rawAttributes);
         attrKeys.forEach(attrKey => {
           //We map the fieldName in lowerCase to the real fieldName, makes it easy to rebuild the object
-          const attribute = this.model.attributes[attrKey];
+          const attribute = this.model.rawAttributes[attrKey];
           //We generate an array like this : attribute(toLowerCase) : attribute(real case)
-          attrs[attribute.fieldName.toLowerCase()] = attribute.fieldName;
+          attrs[hasLowerCase(attribute.fieldName) ? attribute.fieldName : attribute.fieldName.toLowerCase()] =
+            attribute.fieldName;
 
           if (attribute.fieldName !== attribute.field) {
             //Specific case where field and fieldName are differents, in DB it's field, in model we want fieldName
-            attrs[attribute.field.toLowerCase()] = attribute.fieldName;
+            attrs[hasLowerCase(attribute.fieldName) ? attribute.fieldName : attribute.fieldName.toLowerCase()] =
+              attribute.fieldName;
           }
         });
       }
@@ -640,7 +638,7 @@ class Query extends AbstractQuery {
               const realKey = this.sql.substr(firstIdx, key.length);
               newRow[realKey] = element[key];
             } else {
-              let typeid = this.model.attributes[attrs[key.toLowerCase()]].type.toLocaleString();
+              let typeid = this.model.rawAttributes[attrs[key.toLowerCase()]].type.toLocaleString();
 
               //For some types, the "name" of the type is returned with the length, we remove it
               if (typeid.indexOf('(') > -1) {
@@ -887,6 +885,9 @@ class Query extends AbstractQuery {
       this.instance[autoIncrementField] = id;
     }
   }
+}
+function hasLowerCase(str) {
+  return /[a-z]/.test(str);
 }
 
 module.exports = Query;

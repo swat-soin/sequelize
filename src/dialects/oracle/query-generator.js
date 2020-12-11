@@ -1209,7 +1209,7 @@ class OracleQueryGenerator extends AbstractQueryGenerator {
     const inputParameters = {};
     let inputParamCpt = 0;
 
-    // options.model.attributes.memo.type; -> "TEXT"
+    // options.model.rawAttributes.memo.type; -> "TEXT"
 
     _.forEach(attrValueHashes, attrValueHash => {
       // special case for empty objects with primary keys
@@ -1237,12 +1237,12 @@ class OracleQueryGenerator extends AbstractQueryGenerator {
         let row = 'SELECT ';
         const attrs = allAttributes
           .map(key => {
-            let currAttribute = key in options.model.attributes ? options.model.attributes[key] : null;
+            let currAttribute = key in options.model.rawAttributes ? options.model.rawAttributes[key] : null;
 
             if (currAttribute === null) {
               //Maybe we should find the attribute by field and not fieldName
-              for (const attr in options.model.attributes) {
-                const attribute = options.model.attributes[attr];
+              for (const attr in options.model.rawAttributes) {
+                const attribute = options.model.rawAttributes[attr];
                 if (attribute.field === key) {
                   currAttribute = attribute;
                   break;
@@ -1261,9 +1261,9 @@ class OracleQueryGenerator extends AbstractQueryGenerator {
                 val: attrValueHash[key]
               };
               //Binding type to parameter
-              if (options.model.attributes[key].type.key === DataTypes.TEXT.key) {
+              if (options.model.rawAttributes[key].type.key === DataTypes.TEXT.key) {
                 //if text with length, it's generated as a String inside Oracle,
-                if (options.model.attributes[key].type._length !== '') {
+                if (options.model.rawAttributes[key].type._length !== '') {
                   inputParam['type'] = oracleDb.STRING;
                 } else {
                   //No length -> it's a CLOB
@@ -1540,12 +1540,11 @@ class OracleQueryGenerator extends AbstractQueryGenerator {
       return Utils.addTicks(identifier, '"');
     } else if (identifier.indexOf('.') > -1 || identifier.indexOf('->') > -1) {
       return Utils.addTicks(identifier, '"');
+    } else if (_.includes(this.oracleReservedWords, identifier.toUpperCase())) {
+      return Utils.addTicks(identifier, '"');
+    } else if (hasLowerCase(identifier)) {
+      return Utils.addTicks(identifier, '"');
     } else {
-      //If there is a reserved word, we have to quote it
-
-      if (_.includes(this.oracleReservedWords, identifier.toUpperCase())) {
-        return Utils.addTicks(identifier, '"');
-      }
       return identifier;
     }
   }
@@ -1789,6 +1788,10 @@ function wrapSingleQuote(identifier) {
 /* istanbul ignore next */
 function throwMethodUndefined(methodName) {
   throw new Error('The method "' + methodName + '" is not defined! Please add it to your sql dialect.');
+}
+
+function hasLowerCase(str) {
+  return /[a-z]/.test(str);
 }
 
 module.exports = OracleQueryGenerator;
