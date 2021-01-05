@@ -1,19 +1,14 @@
 'use strict';
 
-const Promise = require('../../promise');
 const AbstractQuery = require('../abstract/query');
-const sequelizeErrors = require('../../errors.js');
+const SequelizeErrors = require('../../errors');
 const parserStore = require('../parserStore')('oracle');
 const _ = require('lodash');
 const semver = require('semver');
 
 class Query extends AbstractQuery {
   constructor(connection, sequelize, options) {
-    super();
-    this.connection = connection;
-    this.instance = options.instance;
-    this.model = options.model;
-    this.sequelize = sequelize;
+    super(connection, sequelize, options);
     this.options = _.extend(
       {
         logging: console.log,
@@ -582,16 +577,18 @@ class Query extends AbstractQuery {
         }
 
         //We have a model, we will map the properties returned by Oracle to the field names in the model
-        const attrKeys = Object.keys(this.model.attributes);
+        const attrKeys = Object.keys(this.model.rawAttributes);
         attrKeys.forEach(attrKey => {
           //We map the fieldName in lowerCase to the real fieldName, makes it easy to rebuild the object
-          const attribute = this.model.attributes[attrKey];
+          const attribute = this.model.rawAttributes[attrKey];
           //We generate an array like this : attribute(toLowerCase) : attribute(real case)
-          attrs[attribute.fieldName.toLowerCase()] = attribute.fieldName;
+          attrs[hasLowerCase(attribute.fieldName) ? attribute.fieldName : attribute.fieldName.toLowerCase()] =
+            attribute.fieldName;
 
           if (attribute.fieldName !== attribute.field) {
             //Specific case where field and fieldName are differents, in DB it's field, in model we want fieldName
-            attrs[attribute.field.toLowerCase()] = attribute.fieldName;
+            attrs[hasLowerCase(attribute.fieldName) ? attribute.fieldName : attribute.fieldName.toLowerCase()] =
+              attribute.fieldName;
           }
         });
       }
@@ -641,7 +638,7 @@ class Query extends AbstractQuery {
               const realKey = this.sql.substr(firstIdx, key.length);
               newRow[realKey] = element[key];
             } else {
-              let typeid = this.model.attributes[attrs[key.toLowerCase()]].type.toLocaleString();
+              let typeid = this.model.rawAttributes[attrs[key.toLowerCase()]].type.toLocaleString();
 
               //For some types, the "name" of the type is returned with the length, we remove it
               if (typeid.indexOf('(') > -1) {
@@ -782,7 +779,7 @@ class Query extends AbstractQuery {
 
         fields.forEach(field => {
           errors.push(
-            new sequelizeErrors.ValidationErrorItem(
+            new SequelizeErrors.ValidationErrorItem(
               this.getUniqueConstraintErrorMessage(field),
               'unique violation',
               field,
@@ -792,7 +789,7 @@ class Query extends AbstractQuery {
         });
       }
 
-      return new sequelizeErrors.UniqueConstraintError({
+      return new SequelizeErrors.UniqueConstraintError({
         message,
         errors,
         err,
@@ -803,7 +800,7 @@ class Query extends AbstractQuery {
     //ORA-02291: integrity constraint (string.string) violated - parent key not found / ORA-02292: integrity constraint (string.string) violated - child record found
     match = err.message.match(/ORA-02291/) || err.message.match(/ORA-02292/);
     if (match && match.length > 0) {
-      return new sequelizeErrors.ForeignKeyConstraintError({
+      return new SequelizeErrors.ForeignKeyConstraintError({
         fields: null,
         index: match[1],
         parent: err
@@ -813,10 +810,10 @@ class Query extends AbstractQuery {
     // ORA-02443: Cannot drop constraint  - nonexistent constraint
     match = err.message.match(/ORA-02443/);
     if (match && match.length > 0) {
-      return new sequelizeErrors.UnknownConstraintError(match[1]);
+      return new SequelizeErrors.UnknownConstraintError(match[1]);
     }
 
-    return new sequelizeErrors.DatabaseError(err);
+    return new SequelizeErrors.DatabaseError(err);
   }
 
   isShowIndexesQuery() {
@@ -875,7 +872,7 @@ class Query extends AbstractQuery {
         id = null;
 
       if (
-        this.model.rawAttributes.hasOwnProperty(autoIncrementField) &&
+        Object.prototype.hasOwnProperty.call(this.model.rawAttributes, autoIncrementField) &&
         this.model.rawAttributes[autoIncrementField].field !== undefined
       )
         autoIncrementFieldAlias = this.model.rawAttributes[autoIncrementField].field;
@@ -888,6 +885,9 @@ class Query extends AbstractQuery {
       this.instance[autoIncrementField] = id;
     }
   }
+}
+function hasLowerCase(str) {
+  return /[a-z]/.test(str);
 }
 
 module.exports = Query;

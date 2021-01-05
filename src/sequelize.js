@@ -333,6 +333,9 @@ class Sequelize {
       case 'sqlite':
         Dialect = require('./dialects/sqlite');
         break;
+      case 'oracle':
+        Dialect = require('./dialects/oracle');
+        break;
       default:
         throw new Error(
           `The dialect ${this.getDialect()} is not supported. Supported dialects: mssql, mariadb, mysql, postgres, and sqlite.`

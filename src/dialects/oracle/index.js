@@ -6,6 +6,7 @@ const ConnectionManager = require('./connection-manager');
 const Query = require('./query');
 const QueryGenerator = require('./query-generator');
 const DataTypes = require('../../data-types').oracle;
+const { OracleQueryInterface } = require('./query-interface');
 
 class OracleDialect extends AbstractDialect {
   constructor(sequelize) {
@@ -13,11 +14,11 @@ class OracleDialect extends AbstractDialect {
     this.sequelize = sequelize;
     this.connectionManager = new ConnectionManager(this, sequelize);
     this.connectionManager.initPools();
-    this.QueryGenerator = _.extend({}, QueryGenerator, {
-      options: sequelize.options,
+    this.queryGenerator = new QueryGenerator({
       _dialect: this,
       sequelize
     });
+    this.queryInterface = new OracleQueryInterface(sequelize, this.queryGenerator);
   }
 }
 
@@ -48,9 +49,9 @@ OracleDialect.prototype.supports = _.merge(_.cloneDeep(AbstractDialect.prototype
   GEOMETRY: false
 });
 
-ConnectionManager.prototype.defaultVersion = '12.1.0.2.0';
+OracleDialect.prototype.defaultVersion = '12.1.0';
 OracleDialect.prototype.Query = Query;
-OracleDialect.prototype.QueryGenerator = QueryGenerator;
+OracleDialect.prototype.queryGenerator = QueryGenerator;
 OracleDialect.prototype.DataTypes = DataTypes;
 OracleDialect.prototype.name = 'oracle';
 OracleDialect.prototype.TICK_CHAR = '';

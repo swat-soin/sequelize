@@ -1145,6 +1145,7 @@ class QueryGenerator {
 
         return `json_unquote(json_extract(${quotedColumn},${pathStr}))`;
 
+      case 'oracle':
       case 'postgres':
         pathStr = this.escape(`{${paths.join(',')}}`);
         return `(${quotedColumn}#>>${pathStr})`;

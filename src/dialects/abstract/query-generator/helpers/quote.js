@@ -46,6 +46,7 @@ function quoteIdentifier(dialect, identifier, options) {
     case 'mysql':
       return Utils.addTicks(Utils.removeTicks(identifier, '`'), '`');
 
+    case 'oracle':
     case 'postgres':
       const rawIdentifier = Utils.removeTicks(identifier, '"');
 

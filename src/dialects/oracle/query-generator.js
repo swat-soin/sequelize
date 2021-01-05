@@ -8,499 +8,495 @@ const AbstractQueryGenerator = require('../abstract/query-generator');
 const _ = require('lodash');
 const crc32 = require('js-crc').crc32;
 const uuid = require('uuid');
+//const util = require('util');
+//const Op = require('../../operators');
 
-//List of Oracle reserved words https://docs.oracle.com/cd/B19306_01/em.102/b40103/app_oracle_reserved_words.htm
-const oracleReservedWords = [
-  'ACCESS',
-  'ACCOUNT',
-  'ACTIVATE',
-  'ADD',
-  'ADMIN',
-  'ADVISE',
-  'AFTER',
-  'ALL',
-  'ALL_ROWS',
-  'ALLOCATE',
-  'ALTER',
-  'ANALYZE',
-  'AND',
-  'ANY',
-  'ARCHIVE',
-  'ARCHIVELOG',
-  'ARRAY',
-  'AS',
-  'ASC',
-  'AT',
-  'AUDIT',
-  'AUTHENTICATED',
-  'AUTHORIZATION',
-  'AUTOEXTEND',
-  'AUTOMATIC',
-  'BACKUP',
-  'BECOME',
-  'BEFORE',
-  'BEGIN',
-  'BETWEEN',
-  'BFILE',
-  'BITMAP',
-  'BLOB',
-  'BLOCK',
-  'BODY',
-  'BY',
-  'CACHE',
-  'CACHE_INSTANCES',
-  'CANCEL',
-  'CASCADE',
-  'CAST',
-  'CFILE',
-  'CHAINED',
-  'CHANGE',
-  'CHAR',
-  'CHAR_CS',
-  'CHARACTER',
-  'CHECK',
-  'CHECKPOINT',
-  'CHOOSE',
-  'CHUNK',
-  'CLEAR',
-  'CLOB',
-  'CLONE',
-  'CLOSE',
-  'CLOSE_CACHED_OPEN_CURSORS',
-  'CLUSTER',
-  'COALESCE',
-  'COLUMN',
-  'COLUMNS',
-  'COMMENT',
-  'COMMIT',
-  'COMMITTED',
-  'COMPATIBILITY',
-  'COMPILE',
-  'COMPLETE',
-  'COMPOSITE_LIMIT',
-  'COMPRESS',
-  'COMPUTE',
-  'CONNECT',
-  'CONNECT_TIME',
-  'CONSTRAINT',
-  'CONSTRAINTS',
-  'CONTENTS',
-  'CONTINUE',
-  'CONTROLFILE',
-  'CONVERT',
-  'COST',
-  'CPU_PER_CALL',
-  'CPU_PER_SESSION',
-  'CREATE',
-  'CURRENT',
-  'CURRENT_SCHEMA',
-  'CURREN_USER',
-  'CURSOR',
-  'CYCLE',
-  'DANGLING',
-  'DATABASE',
-  'DATAFILE',
-  'DATAFILES',
-  'DATAOBJNO',
-  'DATE',
-  'DBA',
-  'DBHIGH',
-  'DBLOW',
-  'DBMAC',
-  'DEALLOCATE',
-  'DEBUG',
-  'DEC',
-  'DECIMAL',
-  'DECLARE',
-  'DEFAULT',
-  'DEFERRABLE',
-  'DEFERRED',
-  'DEGREE',
-  'DELETE',
-  'DEREF',
-  'DESC',
-  'DIRECTORY',
-  'DISABLE',
-  'DISCONNECT',
-  'DISMOUNT',
-  'DISTINCT',
-  'DISTRIBUTED',
-  'DML',
-  'DOUBLE',
-  'DROP',
-  'DUMP',
-  'EACH',
-  'ELSE',
-  'ENABLE',
-  'END',
-  'ENFORCE',
-  'ENTRY',
-  'ESCAPE',
-  'EXCEPT',
-  'EXCEPTIONS',
-  'EXCHANGE',
-  'EXCLUDING',
-  'EXCLUSIVE',
-  'EXECUTE',
-  'EXISTS',
-  'EXPIRE',
-  'EXPLAIN',
-  'EXTENT',
-  'EXTENTS',
-  'EXTERNALLY',
-  'FAILED_LOGIN_ATTEMPTS',
-  'FALSE',
-  'FAST',
-  'FILE',
-  'FIRST_ROWS',
-  'FLAGGER',
-  'FLOAT',
-  'FLOB',
-  'FLUSH',
-  'FOR',
-  'FORCE',
-  'FOREIGN',
-  'FREELIST',
-  'FREELISTS',
-  'FROM',
-  'FULL',
-  'FUNCTION',
-  'GLOBAL',
-  'GLOBALLY',
-  'GLOBAL_NAME',
-  'GRANT',
-  'GROUP',
-  'GROUPS',
-  'HASH',
-  'HASHKEYS',
-  'HAVING',
-  'HEADER',
-  'HEAP',
-  'IDENTIFIED',
-  'IDGENERATORS',
-  'IDLE_TIME',
-  'IF',
-  'IMMEDIATE',
-  'IN',
-  'INCLUDING',
-  'INCREMENT',
-  'INDEX',
-  'INDEXED',
-  'INDEXES',
-  'INDICATOR',
-  'IND_PARTITION',
-  'INITIAL',
-  'INITIALLY',
-  'INITRANS',
-  'INSERT',
-  'INSTANCE',
-  'INSTANCES',
-  'INSTEAD',
-  'INT',
-  'INTEGER',
-  'INTERMEDIATE',
-  'INTERSECT',
-  'INTO',
-  'IS',
-  'ISOLATION',
-  'ISOLATION_LEVEL',
-  'KEEP',
-  'KEY',
-  'KILL',
-  'LABEL',
-  'LAYER',
-  'LESS',
-  'LEVEL',
-  'LIBRARY',
-  'LIKE',
-  'LIMIT',
-  'LINK',
-  'LIST',
-  'LOB',
-  'LOCAL',
-  'LOCK',
-  'LOCKED',
-  'LOG',
-  'LOGFILE',
-  'LOGGING',
-  'LOGICAL_READS_PER_CALL',
-  'LOGICAL_READS_PER_SESSION',
-  'LONG',
-  'MANAGE',
-  'MASTER',
-  'MAX',
-  'MAXARCHLOGS',
-  'MAXDATAFILES',
-  'MAXEXTENTS',
-  'MAXINSTANCES',
-  'MAXLOGFILES',
-  'MAXLOGHISTORY',
-  'MAXLOGMEMBERS',
-  'MAXSIZE',
-  'MAXTRANS',
-  'MAXVALUE',
-  'MIN',
-  'MEMBER',
-  'MINIMUM',
-  'MINEXTENTS',
-  'MINUS',
-  'MINVALUE',
-  'MLSLABEL',
-  'MLS_LABEL_FORMAT',
-  'MODE',
-  'MODIFY',
-  'MOUNT',
-  'MOVE',
-  'MTS_DISPATCHERS',
-  'MULTISET',
-  'NATIONAL',
-  'NCHAR',
-  'NCHAR_CS',
-  'NCLOB',
-  'NEEDED',
-  'NESTED',
-  'NETWORK',
-  'NEW',
-  'NEXT',
-  'NOARCHIVELOG',
-  'NOAUDIT',
-  'NOCACHE',
-  'NOCOMPRESS',
-  'NOCYCLE',
-  'NOFORCE',
-  'NOLOGGING',
-  'NOMAXVALUE',
-  'NOMINVALUE',
-  'NONE',
-  'NOORDER',
-  'NOOVERRIDE',
-  'NOPARALLEL',
-  'NOPARALLEL',
-  'NOREVERSE',
-  'NORMAL',
-  'NOSORT',
-  'NOT',
-  'NOTHING',
-  'NOWAIT',
-  'NULL',
-  'NUMBER',
-  'NUMERIC',
-  'NVARCHAR2',
-  'OBJECT',
-  'OBJNO',
-  'OBJNO_REUSE',
-  'OF',
-  'OFF',
-  'OFFLINE',
-  'OID',
-  'OIDINDEX',
-  'OLD',
-  'ON',
-  'ONLINE',
-  'ONLY',
-  'OPCODE',
-  'OPEN',
-  'OPTIMAL',
-  'OPTIMIZER_GOAL',
-  'OPTION',
-  'OR',
-  'ORDER',
-  'ORGANIZATION',
-  'OSLABEL',
-  'OVERFLOW',
-  'OWN',
-  'PACKAGE',
-  'PARALLEL',
-  'PARTITION',
-  'PASSWORD',
-  'PASSWORD_GRACE_TIME',
-  'PASSWORD_LIFE_TIME',
-  'PASSWORD_LOCK_TIME',
-  'PASSWORD_REUSE_MAX',
-  'PASSWORD_REUSE_TIME',
-  'PASSWORD_VERIFY_FUNCTION',
-  'PCTFREE',
-  'PCTINCREASE',
-  'PCTTHRESHOLD',
-  'PCTUSED',
-  'PCTVERSION',
-  'PERCENT',
-  'PERMANENT',
-  'PLAN',
-  'PLSQL_DEBUG',
-  'POST_TRANSACTION',
-  'PRECISION',
-  'PRESERVE',
-  'PRIMARY',
-  'PRIOR',
-  'PRIVATE',
-  'PRIVATE_SGA',
-  'PRIVILEGE',
-  'PRIVILEGES',
-  'PROCEDURE',
-  'PROFILE',
-  'PUBLIC',
-  'PURGE',
-  'QUEUE',
-  'QUOTA',
-  'RANGE',
-  'RAW',
-  'RBA',
-  'READ',
-  'READUP',
-  'REAL',
-  'REBUILD',
-  'RECOVER',
-  'RECOVERABLE',
-  'RECOVERY',
-  'REF',
-  'REFERENCES',
-  'REFERENCING',
-  'REFRESH',
-  'RENAME',
-  'REPLACE',
-  'RESET',
-  'RESETLOGS',
-  'RESIZE',
-  'RESOURCE',
-  'RESTRICTED',
-  'RETURN',
-  'RETURNING',
-  'REUSE',
-  'REVERSE',
-  'REVOKE',
-  'ROLE',
-  'ROLES',
-  'ROLLBACK',
-  'ROW',
-  'ROWID',
-  'ROWNUM',
-  'ROWS',
-  'RULE',
-  'SAMPLE',
-  'SAVEPOINT',
-  'SB4',
-  'SCAN_INSTANCES',
-  'SCHEMA',
-  'SCN',
-  'SCOPE',
-  'SD_ALL',
-  'SD_INHIBIT',
-  'SD_SHOW',
-  'SEGMENT',
-  'SEG_BLOCK',
-  'SEG_FILE',
-  'SELECT',
-  'SEQUENCE',
-  'SERIALIZABLE',
-  'SESSION',
-  'SESSION_CACHED_CURSORS',
-  'SESSIONS_PER_USER',
-  'SET',
-  'SHARE',
-  'SHARED',
-  'SHARED_POOL',
-  'SHRINK',
-  'SIZE',
-  'SKIP',
-  'SKIP_UNUSABLE_INDEXES',
-  'SMALLINT',
-  'SNAPSHOT',
-  'SOME',
-  'SORT',
-  'SPECIFICATION',
-  'SPLIT',
-  'SQL_TRACE',
-  'STANDBY',
-  'START',
-  'STATEMENT_ID',
-  'STATISTICS',
-  'STOP',
-  'STORAGE',
-  'STORE',
-  'STRUCTURE',
-  'SUCCESSFUL',
-  'SWITCH',
-  'SYS_OP_ENFORCE_NOT_NULL$',
-  'SYS_OP_NTCIMG$',
-  'SYNONYM',
-  'SYSDATE',
-  'SYSDBA',
-  'SYSOPER',
-  'SYSTEM',
-  'TABLE',
-  'TABLES',
-  'TABLESPACE',
-  'TABLESPACE_NO',
-  'TABNO',
-  'TEMPORARY',
-  'THAN',
-  'THE',
-  'THEN',
-  'THREAD',
-  'TIMESTAMP',
-  'TIME',
-  'TO',
-  'TOPLEVEL',
-  'TRACE',
-  'TRACING',
-  'TRANSACTION',
-  'TRANSITIONAL',
-  'TRIGGER',
-  'TRIGGERS',
-  'TRUE',
-  'TRUNCATE',
-  'TX',
-  'TYPE',
-  'UB2',
-  'UBA',
-  'UID',
-  'UNARCHIVED',
-  'UNDO',
-  'UNION',
-  'UNIQUE',
-  'UNLIMITED',
-  'UNLOCK',
-  'UNRECOVERABLE',
-  'UNTIL',
-  'UNUSABLE',
-  'UNUSED',
-  'UPDATABLE',
-  'UPDATE',
-  'USAGE',
-  'USE',
-  'USER',
-  'USING',
-  'VALIDATE',
-  'VALIDATION',
-  'VALUE',
-  'VALUES',
-  'VARCHAR',
-  'VARCHAR2',
-  'VARYING',
-  'VIEW',
-  'WHEN',
-  'WHENEVER',
-  'WHERE',
-  'WITH',
-  'WITHOUT',
-  'WORK',
-  'WRITE',
-  'WRITEDOWN',
-  'WRITEUP',
-  'XID',
-  'YEAR',
-  'ZONE'
-];
-
-/* istanbul ignore next */
-const throwMethodUndefined = function (methodName) {
-  throw new Error('The method "' + methodName + '" is not defined! Please add it to your sql dialect.');
-};
-
-const QueryGenerator = {
-  options: {},
-  dialect: 'oracle',
+class OracleQueryGenerator extends AbstractQueryGenerator {
+  constructor(options) {
+    super(options);
+    this.oracleReservedWords = [
+      'ACCESS',
+      'ACCOUNT',
+      'ACTIVATE',
+      'ADD',
+      'ADMIN',
+      'ADVISE',
+      'AFTER',
+      'ALL',
+      'ALL_ROWS',
+      'ALLOCATE',
+      'ALTER',
+      'ANALYZE',
+      'AND',
+      'ANY',
+      'ARCHIVE',
+      'ARCHIVELOG',
+      'ARRAY',
+      'AS',
+      'ASC',
+      'AT',
+      'AUDIT',
+      'AUTHENTICATED',
+      'AUTHORIZATION',
+      'AUTOEXTEND',
+      'AUTOMATIC',
+      'BACKUP',
+      'BECOME',
+      'BEFORE',
+      'BEGIN',
+      'BETWEEN',
+      'BFILE',
+      'BITMAP',
+      'BLOB',
+      'BLOCK',
+      'BODY',
+      'BY',
+      'CACHE',
+      'CACHE_INSTANCES',
+      'CANCEL',
+      'CASCADE',
+      'CAST',
+      'CFILE',
+      'CHAINED',
+      'CHANGE',
+      'CHAR',
+      'CHAR_CS',
+      'CHARACTER',
+      'CHECK',
+      'CHECKPOINT',
+      'CHOOSE',
+      'CHUNK',
+      'CLEAR',
+      'CLOB',
+      'CLONE',
+      'CLOSE',
+      'CLOSE_CACHED_OPEN_CURSORS',
+      'CLUSTER',
+      'COALESCE',
+      'COLUMN',
+      'COLUMNS',
+      'COMMENT',
+      'COMMIT',
+      'COMMITTED',
+      'COMPATIBILITY',
+      'COMPILE',
+      'COMPLETE',
+      'COMPOSITE_LIMIT',
+      'COMPRESS',
+      'COMPUTE',
+      'CONNECT',
+      'CONNECT_TIME',
+      'CONSTRAINT',
+      'CONSTRAINTS',
+      'CONTENTS',
+      'CONTINUE',
+      'CONTROLFILE',
+      'CONVERT',
+      'COST',
+      'CPU_PER_CALL',
+      'CPU_PER_SESSION',
+      'CREATE',
+      'CURRENT',
+      'CURRENT_SCHEMA',
+      'CURREN_USER',
+      'CURSOR',
+      'CYCLE',
+      'DANGLING',
+      'DATABASE',
+      'DATAFILE',
+      'DATAFILES',
+      'DATAOBJNO',
+      'DATE',
+      'DBA',
+      'DBHIGH',
+      'DBLOW',
+      'DBMAC',
+      'DEALLOCATE',
+      'DEBUG',
+      'DEC',
+      'DECIMAL',
+      'DECLARE',
+      'DEFAULT',
+      'DEFERRABLE',
+      'DEFERRED',
+      'DEGREE',
+      'DELETE',
+      'DEREF',
+      'DESC',
+      'DIRECTORY',
+      'DISABLE',
+      'DISCONNECT',
+      'DISMOUNT',
+      'DISTINCT',
+      'DISTRIBUTED',
+      'DML',
+      'DOUBLE',
+      'DROP',
+      'DUMP',
+      'EACH',
+      'ELSE',
+      'ENABLE',
+      'END',
+      'ENFORCE',
+      'ENTRY',
+      'ESCAPE',
+      'EXCEPT',
+      'EXCEPTIONS',
+      'EXCHANGE',
+      'EXCLUDING',
+      'EXCLUSIVE',
+      'EXECUTE',
+      'EXISTS',
+      'EXPIRE',
+      'EXPLAIN',
+      'EXTENT',
+      'EXTENTS',
+      'EXTERNALLY',
+      'FAILED_LOGIN_ATTEMPTS',
+      'FALSE',
+      'FAST',
+      'FILE',
+      'FIRST_ROWS',
+      'FLAGGER',
+      'FLOAT',
+      'FLOB',
+      'FLUSH',
+      'FOR',
+      'FORCE',
+      'FOREIGN',
+      'FREELIST',
+      'FREELISTS',
+      'FROM',
+      'FULL',
+      'FUNCTION',
+      'GLOBAL',
+      'GLOBALLY',
+      'GLOBAL_NAME',
+      'GRANT',
+      'GROUP',
+      'GROUPS',
+      'HASH',
+      'HASHKEYS',
+      'HAVING',
+      'HEADER',
+      'HEAP',
+      'IDENTIFIED',
+      'IDGENERATORS',
+      'IDLE_TIME',
+      'IF',
+      'IMMEDIATE',
+      'IN',
+      'INCLUDING',
+      'INCREMENT',
+      'INDEX',
+      'INDEXED',
+      'INDEXES',
+      'INDICATOR',
+      'IND_PARTITION',
+      'INITIAL',
+      'INITIALLY',
+      'INITRANS',
+      'INSERT',
+      'INSTANCE',
+      'INSTANCES',
+      'INSTEAD',
+      'INT',
+      'INTEGER',
+      'INTERMEDIATE',
+      'INTERSECT',
+      'INTO',
+      'IS',
+      'ISOLATION',
+      'ISOLATION_LEVEL',
+      'KEEP',
+      'KEY',
+      'KILL',
+      'LABEL',
+      'LAYER',
+      'LESS',
+      'LEVEL',
+      'LIBRARY',
+      'LIKE',
+      'LIMIT',
+      'LINK',
+      'LIST',
+      'LOB',
+      'LOCAL',
+      'LOCK',
+      'LOCKED',
+      'LOG',
+      'LOGFILE',
+      'LOGGING',
+      'LOGICAL_READS_PER_CALL',
+      'LOGICAL_READS_PER_SESSION',
+      'LONG',
+      'MANAGE',
+      'MASTER',
+      'MAX',
+      'MAXARCHLOGS',
+      'MAXDATAFILES',
+      'MAXEXTENTS',
+      'MAXINSTANCES',
+      'MAXLOGFILES',
+      'MAXLOGHISTORY',
+      'MAXLOGMEMBERS',
+      'MAXSIZE',
+      'MAXTRANS',
+      'MAXVALUE',
+      'MIN',
+      'MEMBER',
+      'MINIMUM',
+      'MINEXTENTS',
+      'MINUS',
+      'MINVALUE',
+      'MLSLABEL',
+      'MLS_LABEL_FORMAT',
+      'MODE',
+      'MODIFY',
+      'MOUNT',
+      'MOVE',
+      'MTS_DISPATCHERS',
+      'MULTISET',
+      'NATIONAL',
+      'NCHAR',
+      'NCHAR_CS',
+      'NCLOB',
+      'NEEDED',
+      'NESTED',
+      'NETWORK',
+      'NEW',
+      'NEXT',
+      'NOARCHIVELOG',
+      'NOAUDIT',
+      'NOCACHE',
+      'NOCOMPRESS',
+      'NOCYCLE',
+      'NOFORCE',
+      'NOLOGGING',
+      'NOMAXVALUE',
+      'NOMINVALUE',
+      'NONE',
+      'NOORDER',
+      'NOOVERRIDE',
+      'NOPARALLEL',
+      'NOPARALLEL',
+      'NOREVERSE',
+      'NORMAL',
+      'NOSORT',
+      'NOT',
+      'NOTHING',
+      'NOWAIT',
+      'NULL',
+      'NUMBER',
+      'NUMERIC',
+      'NVARCHAR2',
+      'OBJECT',
+      'OBJNO',
+      'OBJNO_REUSE',
+      'OF',
+      'OFF',
+      'OFFLINE',
+      'OID',
+      'OIDINDEX',
+      'OLD',
+      'ON',
+      'ONLINE',
+      'ONLY',
+      'OPCODE',
+      'OPEN',
+      'OPTIMAL',
+      'OPTIMIZER_GOAL',
+      'OPTION',
+      'OR',
+      'ORDER',
+      'ORGANIZATION',
+      'OSLABEL',
+      'OVERFLOW',
+      'OWN',
+      'PACKAGE',
+      'PARALLEL',
+      'PARTITION',
+      'PASSWORD',
+      'PASSWORD_GRACE_TIME',
+      'PASSWORD_LIFE_TIME',
+      'PASSWORD_LOCK_TIME',
+      'PASSWORD_REUSE_MAX',
+      'PASSWORD_REUSE_TIME',
+      'PASSWORD_VERIFY_FUNCTION',
+      'PCTFREE',
+      'PCTINCREASE',
+      'PCTTHRESHOLD',
+      'PCTUSED',
+      'PCTVERSION',
+      'PERCENT',
+      'PERMANENT',
+      'PLAN',
+      'PLSQL_DEBUG',
+      'POST_TRANSACTION',
+      'PRECISION',
+      'PRESERVE',
+      'PRIMARY',
+      'PRIOR',
+      'PRIVATE',
+      'PRIVATE_SGA',
+      'PRIVILEGE',
+      'PRIVILEGES',
+      'PROCEDURE',
+      'PROFILE',
+      'PUBLIC',
+      'PURGE',
+      'QUEUE',
+      'QUOTA',
+      'RANGE',
+      'RAW',
+      'RBA',
+      'READ',
+      'READUP',
+      'REAL',
+      'REBUILD',
+      'RECOVER',
+      'RECOVERABLE',
+      'RECOVERY',
+      'REF',
+      'REFERENCES',
+      'REFERENCING',
+      'REFRESH',
+      'RENAME',
+      'REPLACE',
+      'RESET',
+      'RESETLOGS',
+      'RESIZE',
+      'RESOURCE',
+      'RESTRICTED',
+      'RETURN',
+      'RETURNING',
+      'REUSE',
+      'REVERSE',
+      'REVOKE',
+      'ROLE',
+      'ROLES',
+      'ROLLBACK',
+      'ROW',
+      'ROWID',
+      'ROWNUM',
+      'ROWS',
+      'RULE',
+      'SAMPLE',
+      'SAVEPOINT',
+      'SB4',
+      'SCAN_INSTANCES',
+      'SCHEMA',
+      'SCN',
+      'SCOPE',
+      'SD_ALL',
+      'SD_INHIBIT',
+      'SD_SHOW',
+      'SEGMENT',
+      'SEG_BLOCK',
+      'SEG_FILE',
+      'SELECT',
+      'SEQUENCE',
+      'SERIALIZABLE',
+      'SESSION',
+      'SESSION_CACHED_CURSORS',
+      'SESSIONS_PER_USER',
+      'SET',
+      'SHARE',
+      'SHARED',
+      'SHARED_POOL',
+      'SHRINK',
+      'SIZE',
+      'SKIP',
+      'SKIP_UNUSABLE_INDEXES',
+      'SMALLINT',
+      'SNAPSHOT',
+      'SOME',
+      'SORT',
+      'SPECIFICATION',
+      'SPLIT',
+      'SQL_TRACE',
+      'STANDBY',
+      'START',
+      'STATEMENT_ID',
+      'STATISTICS',
+      'STOP',
+      'STORAGE',
+      'STORE',
+      'STRUCTURE',
+      'SUCCESSFUL',
+      'SWITCH',
+      'SYS_OP_ENFORCE_NOT_NULL$',
+      'SYS_OP_NTCIMG$',
+      'SYNONYM',
+      'SYSDATE',
+      'SYSDBA',
+      'SYSOPER',
+      'SYSTEM',
+      'TABLE',
+      'TABLES',
+      'TABLESPACE',
+      'TABLESPACE_NO',
+      'TABNO',
+      'TEMPORARY',
+      'THAN',
+      'THE',
+      'THEN',
+      'THREAD',
+      'TIMESTAMP',
+      'TIME',
+      'TO',
+      'TOPLEVEL',
+      'TRACE',
+      'TRACING',
+      'TRANSACTION',
+      'TRANSITIONAL',
+      'TRIGGER',
+      'TRIGGERS',
+      'TRUE',
+      'TRUNCATE',
+      'TX',
+      'TYPE',
+      'UB2',
+      'UBA',
+      'UID',
+      'UNARCHIVED',
+      'UNDO',
+      'UNION',
+      'UNIQUE',
+      'UNLIMITED',
+      'UNLOCK',
+      'UNRECOVERABLE',
+      'UNTIL',
+      'UNUSABLE',
+      'UNUSED',
+      'UPDATABLE',
+      'UPDATE',
+      'USAGE',
+      'USE',
+      'USER',
+      'USING',
+      'VALIDATE',
+      'VALIDATION',
+      'VALUE',
+      'VALUES',
+      'VARCHAR',
+      'VARCHAR2',
+      'VARYING',
+      'VIEW',
+      'WHEN',
+      'WHENEVER',
+      'WHERE',
+      'WITH',
+      'WITHOUT',
+      'WORK',
+      'WRITE',
+      'WRITEDOWN',
+      'WRITEUP',
+      'XID',
+      'YEAR',
+      'ZONE'
+    ];
+  }
 
   createSchema(schema) {
     schema = this.quoteIdentifier(schema);
@@ -544,19 +540,18 @@ const QueryGenerator = {
       '  END IF;',
       'END;'
     ].join(' ');
-  },
+  }
 
   showSchemasQuery() {
     return 'SELECT USERNAME AS "schema_name" FROM ALL_USERS WHERE COMMON = (\'NO\') AND USERNAME != user';
-  },
+  }
 
   dropSchema(tableName) {
     return 'DROP USER ' + this.quoteTable(tableName) + ' CASCADE';
-  },
-
+  }
   versionQuery() {
     return "SELECT VERSION FROM PRODUCT_COMPONENT_VERSION WHERE PRODUCT LIKE 'Oracle%'";
-  },
+  }
 
   createTableQuery(tableName, attributes, options) {
     let query = 'CREATE TABLE <%= table %> (<%= attributes %>)';
@@ -577,7 +572,7 @@ const QueryGenerator = {
 
     //Starting by dealing with all attributes
     for (let attr in attributes) {
-      if (attributes.hasOwnProperty(attr)) {
+      if (Object.prototype.hasOwnProperty.call(attributes, attr)) {
         const dataType = attributes[attr];
         let match;
 
@@ -600,7 +595,7 @@ const QueryGenerator = {
                 }
                 tableName += this.quoteTable(table.tableName);
               } else {
-                tableName = _.includes(oracleReservedWords, table.toUpperCase()) ? '"' + table + '"' : table;
+                tableName = _.includes(this.oracleReservedWords, table.toUpperCase()) ? '"' + table + '"' : table;
               }
 
               return `REFERENCES ${tableName} (${this.quoteIdentifier(column)})`;
@@ -622,7 +617,7 @@ const QueryGenerator = {
               }
               tableName += this.quoteTable(table.tableName);
             } else {
-              tableName = _.includes(oracleReservedWords, table.toUpperCase()) ? '"' + table + '"' : table;
+              tableName = _.includes(this.oracleReservedWords, table.toUpperCase()) ? '"' + table + '"' : table;
             }
             return `REFERENCES ${tableName} (${this.quoteIdentifier(column)})`;
           });
@@ -669,7 +664,7 @@ const QueryGenerator = {
 
     //Dealing with FKs
     for (const fkey in foreignKeys) {
-      if (foreignKeys.hasOwnProperty(fkey)) {
+      if (Object.prototype.hasOwnProperty.call(foreignKeys, fkey)) {
         //Oracle default response for FK, doesn't support if defined
         if (foreignKeys[fkey].indexOf('ON DELETE NO ACTION') > -1) {
           foreignKeys[fkey] = foreignKeys[fkey].replace('ON DELETE NO ACTION', '');
@@ -804,7 +799,7 @@ const QueryGenerator = {
 
           const indexUpperName = indexName.toUpperCase();
 
-          if (_.includes(oracleReservedWords, indexUpperName) || indexUpperName.charAt(0) === '_') {
+          if (_.includes(this.oracleReservedWords, indexUpperName) || indexUpperName.charAt(0) === '_') {
             indexName = '"' + indexName + '"';
           }
 
@@ -825,7 +820,7 @@ const QueryGenerator = {
     values.createTableQuery = query;
 
     return _.template(completeQuery)(values).trim();
-  },
+  }
 
   /**
    * Generates a name for an unique constraint with the pattern : uniqTABLENAMECOLUMNNAMES
@@ -848,8 +843,7 @@ const QueryGenerator = {
     }
 
     return indexName;
-  },
-
+  }
   describeTableQuery(tableName, schema) {
     //name, type, datalength (except number / nvarchar), datalength varchar, datalength number, nullable, default value, primary ?
     const sql = [
@@ -872,7 +866,7 @@ const QueryGenerator = {
     };
 
     return _.template(sql)(values).trim();
-  },
+  }
 
   renameTableQuery(before, after) {
     const query = 'ALTER TABLE <%= before %> RENAME TO <%= after %>';
@@ -880,15 +874,15 @@ const QueryGenerator = {
       before: this.quoteTable(before),
       after: this.quoteTable(after)
     });
-  },
+  }
 
   showConstraintsQuery(tableName) {
     return `SELECT CONSTRAINT_NAME constraint_name FROM user_cons_columns WHERE table_name = '${tableName.toUpperCase()}'`;
-  },
+  }
 
   showTablesQuery() {
     return 'SELECT owner as table_schema, table_name, 0 as lvl FROM all_tables where OWNER IN(SELECT USERNAME AS "schema_name" FROM ALL_USERS WHERE ORACLE_MAINTAINED = \'N\')';
-  },
+  }
 
   dropTableQuery(tableName) {
     let table = '';
@@ -907,7 +901,7 @@ const QueryGenerator = {
     };
 
     return _.template(query.join(''))(values).trim();
-  },
+  }
 
   addConstraintQuery(tableName, options) {
     options = options || {};
@@ -923,7 +917,7 @@ const QueryGenerator = {
     }
 
     return `ALTER TABLE ${tableName} ADD ${constraintSnippet}`;
-  },
+  }
 
   addColumnQuery(table, key, dataType) {
     dataType.field = key;
@@ -942,7 +936,7 @@ const QueryGenerator = {
       table: this.quoteTable(table),
       attribute
     });
-  },
+  }
 
   removeColumnQuery(tableName, attributeName) {
     const query = 'ALTER TABLE <%= tableName %> DROP COLUMN <%= attributeName %>';
@@ -951,7 +945,7 @@ const QueryGenerator = {
       tableName: this.quoteTable(tableName),
       attributeName: this.quoteIdentifier(attributeName)
     });
-  },
+  }
 
   changeColumnQuery(tableName, attributes) {
     const modifyQuery = 'ALTER TABLE <%= tableName %> MODIFY (<%= query %>)';
@@ -1021,7 +1015,7 @@ const QueryGenerator = {
       fullQuery: query,
       secondQuery
     }));
-  },
+  }
 
   renameColumnQuery(tableName, attrBefore, attributes) {
     const query = 'ALTER TABLE <%= tableName %> RENAME COLUMN <%= before %> TO <%= after %>',
@@ -1032,7 +1026,7 @@ const QueryGenerator = {
       before: this.quoteIdentifier(attrBefore),
       after: this.quoteIdentifier(newName)
     });
-  },
+  }
 
   /**
    * Override of upsertQuery, Oracle specific
@@ -1068,7 +1062,7 @@ const QueryGenerator = {
     ];
 
     return sql.join('');
-  },
+  }
 
   /*
    * Override of insertQuery, Oracle specific
@@ -1114,7 +1108,7 @@ const QueryGenerator = {
 
     valueHash = Utils.removeNullValuesFromHash(valueHash, this.options.omitNull);
     for (key in valueHash) {
-      if (valueHash.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(valueHash, key)) {
         value = valueHash[key];
         fields.push(this.quoteIdentifier(key));
 
@@ -1162,7 +1156,7 @@ const QueryGenerator = {
         //We don't have a primaryKey, so we will return the first column inserted
         let field = modelAttributes[Object.keys(modelAttributes)[0]].field;
 
-        if (_.includes(oracleReservedWords, field.toUpperCase())) {
+        if (_.includes(this.oracleReservedWords, field.toUpperCase())) {
           //The column name we want to return is a reserved word, so we change it for the request to be OK
           field = 'pkReturnVal';
         }
@@ -1188,7 +1182,7 @@ const QueryGenerator = {
     }
 
     return _.template(query)(replacements);
-  },
+  }
 
   /**
    * Oracle way to insert multiple rows inside a single statement
@@ -1215,7 +1209,7 @@ const QueryGenerator = {
     const inputParameters = {};
     let inputParamCpt = 0;
 
-    // options.model.attributes.memo.type; -> "TEXT"
+    // options.model.rawAttributes.memo.type; -> "TEXT"
 
     _.forEach(attrValueHashes, attrValueHash => {
       // special case for empty objects with primary keys
@@ -1243,12 +1237,12 @@ const QueryGenerator = {
         let row = 'SELECT ';
         const attrs = allAttributes
           .map(key => {
-            let currAttribute = key in options.model.attributes ? options.model.attributes[key] : null;
+            let currAttribute = key in options.model.rawAttributes ? options.model.rawAttributes[key] : null;
 
             if (currAttribute === null) {
               //Maybe we should find the attribute by field and not fieldName
-              for (const attr in options.model.attributes) {
-                const attribute = options.model.attributes[attr];
+              for (const attr in options.model.rawAttributes) {
+                const attribute = options.model.rawAttributes[attr];
                 if (attribute.field === key) {
                   currAttribute = attribute;
                   break;
@@ -1267,9 +1261,9 @@ const QueryGenerator = {
                 val: attrValueHash[key]
               };
               //Binding type to parameter
-              if (options.model.attributes[key].type.key === DataTypes.TEXT.key) {
+              if (options.model.rawAttributes[key].type.key === DataTypes.TEXT.key) {
                 //if text with length, it's generated as a String inside Oracle,
-                if (options.model.attributes[key].type._length !== '') {
+                if (options.model.rawAttributes[key].type._length !== '') {
                   inputParam['type'] = oracleDb.STRING;
                 } else {
                   //No length -> it's a CLOB
@@ -1319,8 +1313,7 @@ const QueryGenerator = {
     };
 
     return _.template(allQueries.join(';'))(replacements);
-  },
-
+  }
   deleteQuery(tableName, where, options) {
     options = options || {};
 
@@ -1352,7 +1345,7 @@ const QueryGenerator = {
     }
 
     return _.template(queryTmpl)(replacements);
-  },
+  }
 
   showIndexesQuery(tableName) {
     let owner = '';
@@ -1376,7 +1369,7 @@ const QueryGenerator = {
     return _.template(request)({
       tableName
     });
-  },
+  }
 
   removeIndexQuery(tableName, indexNameOrAttributes) {
     const sql = 'DROP INDEX <%= indexName %>';
@@ -1392,7 +1385,7 @@ const QueryGenerator = {
     };
 
     return _.template(sql)(values);
-  },
+  }
 
   attributeToSQL(attribute) {
     if (!_.isPlainObject(attribute)) {
@@ -1485,8 +1478,7 @@ const QueryGenerator = {
     }
 
     return template;
-  },
-
+  }
   attributesToSQL(attributes, options) {
     const result = {};
 
@@ -1497,31 +1489,31 @@ const QueryGenerator = {
     }
 
     return result;
-  },
+  }
 
   createTrigger() {
     throwMethodUndefined('createTrigger');
-  },
+  }
 
   dropTrigger() {
     throwMethodUndefined('dropTrigger');
-  },
+  }
 
   renameTrigger() {
     throwMethodUndefined('renameTrigger');
-  },
+  }
 
   createFunction() {
     throwMethodUndefined('createFunction');
-  },
+  }
 
   dropFunction() {
     throwMethodUndefined('dropFunction');
-  },
+  }
 
   renameFunction() {
     throwMethodUndefined('renameFunction');
-  },
+  }
 
   /**
    * Method for setting the good case to the name passed in parameter used for defining the correct case for the owner
@@ -1530,14 +1522,14 @@ const QueryGenerator = {
    * @param name
    */
   getOwnerToGoodCase(name) {
-    if (_.includes(oracleReservedWords, name.toUpperCase())) {
+    if (_.includes(this.oracleReservedWords, name.toUpperCase())) {
       //The name is reserved, we return in normal case
       return name;
     } else {
       //The name is not reserved, we return in uppercase
       return name.toUpperCase();
     }
-  },
+  }
 
   quoteIdentifier(identifier, force) {
     if (identifier === '*') {
@@ -1548,15 +1540,14 @@ const QueryGenerator = {
       return Utils.addTicks(identifier, '"');
     } else if (identifier.indexOf('.') > -1 || identifier.indexOf('->') > -1) {
       return Utils.addTicks(identifier, '"');
+    } else if (_.includes(this.oracleReservedWords, identifier.toUpperCase())) {
+      return Utils.addTicks(identifier, '"');
+    } else if (hasLowerCase(identifier)) {
+      return Utils.addTicks(identifier, '"');
     } else {
-      //If there is a reserved word, we have to quote it
-
-      if (_.includes(oracleReservedWords, identifier.toUpperCase())) {
-        return Utils.addTicks(identifier, '"');
-      }
       return identifier;
     }
-  },
+  }
 
   getConstraintsOnColumn(table, column) {
     const tableName = table.tableName || table;
@@ -1572,7 +1563,7 @@ const QueryGenerator = {
     ].join('');
 
     return sql;
-  },
+  }
 
   getForeignKeysQuery(table) {
     //We don't call quoteTable as we don't want the schema in the table name, Oracle seperates it on another field
@@ -1586,7 +1577,7 @@ const QueryGenerator = {
     ].join('');
 
     return sql;
-  },
+  }
 
   quoteTable(param, as) {
     let table = '';
@@ -1595,14 +1586,14 @@ const QueryGenerator = {
       if (param.schema) {
         table += this.quoteIdentifier(param.schema) + '.';
       }
-      if (_.includes(oracleReservedWords, param.tableName.toUpperCase()) || param.tableName.indexOf('_') === 0) {
+      if (_.includes(this.oracleReservedWords, param.tableName.toUpperCase()) || param.tableName.indexOf('_') === 0) {
         table += this.quoteIdentifier(param.tableName, true);
       } else {
         table += this.quoteIdentifier(param.tableName);
       }
     } else {
       //If there is a reserved word, we have to quote it
-      if (_.includes(oracleReservedWords, param.toUpperCase()) || param.indexOf('_') === 0) {
+      if (_.includes(this.oracleReservedWords, param.toUpperCase()) || param.indexOf('_') === 0) {
         table = this.quoteIdentifier(param, true);
       } else {
         table = this.quoteIdentifier(param);
@@ -1618,7 +1609,7 @@ const QueryGenerator = {
       }
     }
     return table;
-  },
+  }
 
   nameIndexes(indexes, rawTablename) {
     let tableName;
@@ -1628,7 +1619,7 @@ const QueryGenerator = {
       tableName = rawTablename;
     }
     return _.map(indexes, index => {
-      if (!index.hasOwnProperty('name')) {
+      if (!Object.prototype.hasOwnProperty.call(index, 'name')) {
         if (index.unique) {
           index.name = this._generateUniqueConstraintName(tableName, index.fields);
         } else {
@@ -1640,11 +1631,11 @@ const QueryGenerator = {
       }
       return index;
     });
-  },
+  }
 
   dropForeignKeyQuery(tableName, foreignKey) {
     return this.dropConstraintQuery(tableName, foreignKey);
-  },
+  }
 
   getPrimaryKeyConstraintQuery(tableName) {
     const sql = [
@@ -1662,7 +1653,7 @@ const QueryGenerator = {
     ].join('');
 
     return sql;
-  },
+  }
 
   /**
    * Request to know if the table has a identity primary key, returns the name of the declaration of the identity if true
@@ -1676,7 +1667,7 @@ const QueryGenerator = {
       "' ",
       tableName.schema ? "AND OWNER = '" + this.getOwnerToGoodCase(tableName.schema) + "' " : ' '
     ].join('');
-  },
+  }
 
   /**
    * Drop identity
@@ -1689,7 +1680,7 @@ const QueryGenerator = {
     const table = this.quoteTable(tableName);
 
     return 'ALTER TABLE ' + table + ' MODIFY ' + columnName + ' DROP IDENTITY';
-  },
+  }
 
   dropConstraintQuery(tableName, constraintName) {
     const sql = 'ALTER TABLE <%= table %> DROP CONSTRAINT "<%= constraint %>"';
@@ -1698,14 +1689,14 @@ const QueryGenerator = {
       table: this.quoteTable(tableName),
       constraint: constraintName
     });
-  },
+  }
 
   setAutocommitQuery(value) {
     if (value) {
       //Do nothing, just for eslint
     }
     return '';
-  },
+  }
 
   setIsolationLevelQuery(value, options) {
     if (options.parent) {
@@ -1714,13 +1705,13 @@ const QueryGenerator = {
 
     //We force the transaction level to the highest to have consistent datas
     return 'SET TRANSACTION ISOLATION LEVEL READ COMMITTED;';
-  },
+  }
 
   generateTransactionId() {
     //Oracle doesn't support transaction names > 32...
     //To deal with -savepoint-XX , we generate the uuid and then get the crc32 of it
     return crc32(uuid.v4());
-  },
+  }
 
   startTransactionQuery(transaction) {
     if (transaction.parent) {
@@ -1728,7 +1719,7 @@ const QueryGenerator = {
     }
 
     return 'BEGIN TRANSACTION';
-  },
+  }
 
   commitTransactionQuery(transaction) {
     if (transaction.parent) {
@@ -1736,7 +1727,7 @@ const QueryGenerator = {
     }
 
     return 'COMMIT TRANSACTION';
-  },
+  }
 
   rollbackTransactionQuery(transaction) {
     if (transaction.parent) {
@@ -1744,7 +1735,7 @@ const QueryGenerator = {
     }
 
     return 'ROLLBACK TRANSACTION';
-  },
+  }
 
   selectFromTableFragment(options, model, attributes, tables, mainTableAs) {
     let mainFragment = 'SELECT ' + attributes.join(', ') + ' FROM ' + tables;
@@ -1754,7 +1745,7 @@ const QueryGenerator = {
     }
 
     return mainFragment;
-  },
+  }
 
   addLimitAndOffset(options, model) {
     let fragment = '';
@@ -1782,16 +1773,25 @@ const QueryGenerator = {
     }
 
     return fragment;
-  },
+  }
 
   booleanValue(value) {
     return value ? 1 : 0;
   }
-};
+}
 
 // private methods
 function wrapSingleQuote(identifier) {
   return Utils.addTicks(identifier, "'");
 }
 
-module.exports = _.extend(_.clone(AbstractQueryGenerator), QueryGenerator);
+/* istanbul ignore next */
+function throwMethodUndefined(methodName) {
+  throw new Error('The method "' + methodName + '" is not defined! Please add it to your sql dialect.');
+}
+
+function hasLowerCase(str) {
+  return /[a-z]/.test(str);
+}
+
+module.exports = OracleQueryGenerator;
