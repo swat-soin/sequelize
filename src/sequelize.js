@@ -879,6 +879,11 @@ class Sequelize {
       ...options
     };
 
+    if (this.getDialect() === 'oracle') {
+      await this.query('SELECT 1+1 AS result from dual', options);
+      return;
+    }
+
     await this.query('SELECT 1+1 AS result', options);
 
     return;
