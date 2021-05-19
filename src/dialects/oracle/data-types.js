@@ -105,7 +105,7 @@ module.exports = BaseTypes => {
     }
 
     static parse(value, options) {
-      value = value.string();
+      value = value.toString();
       if (value === null) {
         return value;
       }
