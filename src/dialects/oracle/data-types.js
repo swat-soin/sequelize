@@ -109,10 +109,12 @@ module.exports = BaseTypes => {
       if (value === null) {
         return value;
       }
-      if (moment.tz.zone(options.timezone)) {
+      if (options && moment.tz.zone(options.timezone)) {
         value = moment.tz(value, options.timezone).toDate();
-      } else {
+      } else if (options) {
         value = new Date(`${value} ${options.timezone}`);
+      } else {
+        value = new Date(`${value}`);
       }
       return value;
     }
