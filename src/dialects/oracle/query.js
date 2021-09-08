@@ -528,7 +528,7 @@ class Query extends AbstractQuery {
           if (this.isSelectCountQuery() && this.sql.toLowerCase().indexOf('group') === -1) {
             //We should pass here if we only have SELECT COUNT(*) FROM TABLE (WHERE)
             const match = this.sql.match(/.* AS (.*) FROM .*/i);
-            if (match[1]) {
+            if (match[1] && match[1] !== '"count"') {
               //We use the alias
               const returnValue = {};
               returnValue[match[1]] = rows[0][match[1].toUpperCase()];
